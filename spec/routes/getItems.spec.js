@@ -1,8 +1,8 @@
-const db = require('../../src/persistence');
+const db = require('../../src/database');
 const getItems = require('../../src/routes/getItems');
 const ITEMS = [{ id: 12345 }];
 
-jest.mock('../../src/persistence', () => ({
+jest.mock('../../src/database', () => ({
     getItems: jest.fn(),
 }));
 

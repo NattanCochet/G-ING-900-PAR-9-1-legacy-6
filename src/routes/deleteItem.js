@@ -1,4 +1,4 @@
-const db = require('../persistence');
+const db = require('../database');
 
 module.exports = async (req, res) => {
     await db.removeItem(req.params.id);

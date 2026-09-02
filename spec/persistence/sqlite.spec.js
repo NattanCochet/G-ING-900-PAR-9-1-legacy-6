@@ -1,4 +1,4 @@
-const db = require('../../src/persistence/sqlite');
+const db = require('../../src/database/sqlite');
 const fs = require('fs');
 const location = process.env.SQLITE_DB_LOCATION || '/etc/todos/todo.db';
 
