@@ -1,0 +1,12 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: src/Dockerfile
+    ports:
+      - "3000:3000"
+    volumes:
+      - todo-data:/data
+
+volumes:
+  todo-data:
