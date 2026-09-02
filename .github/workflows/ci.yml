@@ -25,4 +25,4 @@ jobs:
           SQLITE_DB_LOCATION: ${{ runner.temp }}/todo.db
 
       - name: Build Docker image
-        run: sudo docker compose build
+        run: docker compose build
