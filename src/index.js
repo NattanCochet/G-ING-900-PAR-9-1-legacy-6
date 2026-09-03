@@ -7,7 +7,17 @@ const updateItem = require('./routes/updateItem');
 const deleteItem = require('./routes/deleteItem');
 
 app.use(express.json());
+app.set('view engine', 'ejs');
+app.set('views', __dirname + '/front/views');
 app.use(express.static(__dirname + '/front/static'));
+
+app.get('/', (req, res) => {
+    res.redirect('/login');
+});
+
+app.get('/login', (req, res) => res.render('login'));
+app.get('/home', (req, res) => res.render('index'));
+app.get('/register', (req, res) => res.render('register'));
 
 app.get('/items', getItems);
 app.post('/items', addItem);
