@@ -1,6 +1,9 @@
+if (!process.env.SQLITE_DB_LOCATION) {
+    process.env.SQLITE_DB_LOCATION = require('os').tmpdir() + '/todo.db';
+}
 const db = require('../../src/database/sqlite');
 const fs = require('fs');
-const location = process.env.SQLITE_DB_LOCATION || '/etc/todos/todo.db';
+const location = process.env.SQLITE_DB_LOCATION;
 
 const ITEM = {
     id: '7aef3d7c-d301-4846-8358-2a91ec9d6be3',
@@ -62,4 +65,15 @@ test('it can get a single item', async () => {
 
     const item = await db.getItem(ITEM.id);
     expect(item).toEqual(ITEM);
+});
+
+test('it returns undefined if item is not found', async () => {
+    await db.init();
+    const item = await db.getItem('non-existent-id');
+    expect(item).toBeUndefined();
+});
+
+test('it closes connection correctly on teardown', async () => {
+    await db.init();
+    await db.teardown();
 });
