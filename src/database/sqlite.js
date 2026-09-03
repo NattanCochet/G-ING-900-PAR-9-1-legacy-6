@@ -3,7 +3,7 @@ const queries = require('./queries');
 const fs = require('fs');
 const location = process.env.SQLITE_DB_LOCATION || '/etc/todos/todo.db';
 
-let db, dbAll, dbRun;
+let db;
 
 function init() {
     const dirName = require('path').dirname(location);
@@ -18,13 +18,13 @@ function init() {
             if (process.env.NODE_ENV !== 'test')
                 console.log(`Using sqlite database at ${location}`);
 
-            db.run(
-                queries.initTableSqlite,
-                (err, result) => {
+            db.serialize(() => {
+                db.run(queries.initTableSqlite, err => { if (err) return rej(err); });
+                db.run(queries.initUsersSqlite, err => {
                     if (err) return rej(err);
                     acc();
-                },
-            );
+                });
+            });
         });
     });
 }
@@ -103,6 +103,46 @@ async function removeItem(id) {
     });
 }
 
+async function createUser(user) {
+    return new Promise((acc, rej) => {
+        db.run(
+            queries.createUser,
+            [user.id, user.username, user.password],
+            err => {
+                if (err) return rej(err);
+                acc();
+            },
+        );
+    });
+}
+
+async function getUserByUsername(username) {
+    return new Promise((acc, rej) => {
+        db.all(queries.getUserByUsername, [username], (err, rows) => {
+            if (err) return rej(err);
+            acc(rows[0]);
+        });
+    });
+}
+
+async function getUserById(id) {
+    return new Promise((acc, rej) => {
+        db.all(queries.getUserById, [id], (err, rows) => {
+            if (err) return rej(err);
+            acc(rows[0]);
+        });
+    });
+}
+
+async function deleteUser(id) {
+    return new Promise((acc, rej) => {
+        db.run(queries.deleteUser, [id], err => {
+            if (err) return rej(err);
+            acc();
+        });
+    });
+}
+
 module.exports = {
     init,
     teardown,
@@ -111,4 +151,8 @@ module.exports = {
     storeItem,
     updateItem,
     removeItem,
+    createUser,
+    getUserByUsername,
+    getUserById,
+    deleteUser,
 };
