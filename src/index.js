@@ -6,6 +6,15 @@ const addItem = require('./routes/addItem');
 const updateItem = require('./routes/updateItem');
 const deleteItem = require('./routes/deleteItem');
 const { apiReference } = require('@scalar/express-api-reference');
+const swaggerJsdoc = require('swagger-jsdoc');
+
+const openapiSpec = swaggerJsdoc({
+    definition: {
+        openapi: '3.1.0',
+        info: { title: 'Legacy Project API', version: '0.1' },
+    },
+    apis: [__dirname + '/routes/*.js'],
+});
 
 app.use(express.json());
 app.use(express.static(__dirname + '/front/static'));
@@ -15,7 +24,7 @@ app.post('/items', addItem);
 app.put('/items/:id', updateItem);
 app.delete('/items/:id', deleteItem);
 
-app.get('/openapi.json', (req, res) => res.sendFile(__dirname + '/openapi.json'));
+app.get('/openapi.json', (req, res) => res.send(openapiSpec));
 app.use('/reference', apiReference({ url: '/openapi.json' }));
 
 db.init().then(() => {
