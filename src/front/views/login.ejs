@@ -6,7 +6,7 @@
 </head>
 <body>
     <h2>Connexion</h2>
-    <form action="/login" method="POST">
+    <form id="loginForm">
         <div>
             <label for="email">Email :</label><br>
             <input type="email" id="email" name="email" required>
@@ -18,7 +18,38 @@
         </div>
         <br>
         <button type="submit">Se connecter</button>
+        <p id="errorMsg" style="color:red; display:none;"></p>
     </form>
     <p>Vous n'avez pas de compte ? <a href="/register">Inscrivez-vous</a></p>
+
+    <script>
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const errorMsg = document.getElementById('errorMsg');
+
+            try {
+                const response = await fetch('/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    localStorage.setItem('token', data.token);
+                    window.location.href = '/home';
+                } else {
+                    errorMsg.textContent = data.error || 'Erreur de connexion';
+                    errorMsg.style.display = 'block';
+                }
+            } catch (err) {
+                errorMsg.textContent = 'Erreur réseau';
+                errorMsg.style.display = 'block';
+            }
+        });
+    </script>
 </body>
 </html>
