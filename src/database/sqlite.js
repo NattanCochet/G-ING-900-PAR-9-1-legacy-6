@@ -107,7 +107,7 @@ async function createUser(user) {
     return new Promise((acc, rej) => {
         db.run(
             queries.createUser,
-            [user.id, user.username, user.password],
+            [user.id, user.name, user.email, user.password],
             err => {
                 if (err) return rej(err);
                 acc();
@@ -116,9 +116,9 @@ async function createUser(user) {
     });
 }
 
-async function getUserByUsername(username) {
+async function getUserByEmail(email) {
     return new Promise((acc, rej) => {
-        db.all(queries.getUserByUsername, [username], (err, rows) => {
+        db.all(queries.getUserByEmail, [email], (err, rows) => {
             if (err) return rej(err);
             acc(rows[0]);
         });
@@ -152,7 +152,7 @@ module.exports = {
     updateItem,
     removeItem,
     createUser,
-    getUserByUsername,
+    getUserByEmail,
     getUserById,
     deleteUser,
 };

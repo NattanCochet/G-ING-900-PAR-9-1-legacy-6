@@ -4,7 +4,7 @@ const jwt = require('jsonwebtoken');
 const login = require('../../src/routes/login');
 
 jest.mock('../../src/database', () => ({
-    getUserByUsername: jest.fn(),
+    getUserByEmail: jest.fn(),
 }));
 
 jest.mock('bcryptjs', () => ({
@@ -17,7 +17,8 @@ jest.mock('jsonwebtoken', () => ({
 
 const STORED_USER = {
     id: 'user-id-123',
-    username: 'alice',
+    name: 'Alice',
+    email: 'alice@example.com',
     password: 'hashed_secret',
 };
 
@@ -26,17 +27,17 @@ beforeEach(() => {
 });
 
 test('it logs in a user correctly', async () => {
-    const req = { body: { username: 'alice', password: 'secret' } };
+    const req = { body: { email: 'alice@example.com', password: 'secret' } };
     const res = { send: jest.fn(), status: jest.fn().mockReturnThis() };
 
-    db.getUserByUsername.mockReturnValue(Promise.resolve(STORED_USER));
+    db.getUserByEmail.mockReturnValue(Promise.resolve(STORED_USER));
     bcrypt.compare.mockReturnValue(Promise.resolve(true));
     jwt.sign.mockReturnValue('fake.jwt.token');
 
     await login(req, res);
 
-    expect(db.getUserByUsername.mock.calls.length).toBe(1);
-    expect(db.getUserByUsername.mock.calls[0][0]).toBe('alice');
+    expect(db.getUserByEmail.mock.calls.length).toBe(1);
+    expect(db.getUserByEmail.mock.calls[0][0]).toBe('alice@example.com');
 
     expect(bcrypt.compare.mock.calls.length).toBe(1);
     expect(bcrypt.compare.mock.calls[0][0]).toBe('secret');
@@ -44,35 +45,35 @@ test('it logs in a user correctly', async () => {
 
     expect(res.send.mock.calls[0][0]).toEqual({
         token: 'fake.jwt.token',
-        user: { id: 'user-id-123', username: 'alice' },
+        user: { id: 'user-id-123', name: 'Alice', email: 'alice@example.com' },
     });
 });
 
-test('it returns 400 if username is missing', async () => {
+test('it returns 400 if email is missing', async () => {
     const req = { body: { password: 'secret' } };
     const res = { status: jest.fn().mockReturnThis(), send: jest.fn() };
 
     await login(req, res);
 
     expect(res.status.mock.calls[0][0]).toBe(400);
-    expect(db.getUserByUsername.mock.calls.length).toBe(0);
+    expect(db.getUserByEmail.mock.calls.length).toBe(0);
 });
 
 test('it returns 400 if password is missing', async () => {
-    const req = { body: { username: 'alice' } };
+    const req = { body: { email: 'alice@example.com' } };
     const res = { status: jest.fn().mockReturnThis(), send: jest.fn() };
 
     await login(req, res);
 
     expect(res.status.mock.calls[0][0]).toBe(400);
-    expect(db.getUserByUsername.mock.calls.length).toBe(0);
+    expect(db.getUserByEmail.mock.calls.length).toBe(0);
 });
 
 test('it returns 401 if user does not exist', async () => {
-    const req = { body: { username: 'unknown', password: 'secret' } };
+    const req = { body: { email: 'unknown@example.com', password: 'secret' } };
     const res = { status: jest.fn().mockReturnThis(), send: jest.fn() };
 
-    db.getUserByUsername.mockReturnValue(Promise.resolve(undefined));
+    db.getUserByEmail.mockReturnValue(Promise.resolve(undefined));
 
     await login(req, res);
 
@@ -81,10 +82,10 @@ test('it returns 401 if user does not exist', async () => {
 });
 
 test('it returns 401 if password is wrong', async () => {
-    const req = { body: { username: 'alice', password: 'wrong' } };
+    const req = { body: { email: 'alice@example.com', password: 'wrong' } };
     const res = { status: jest.fn().mockReturnThis(), send: jest.fn() };
 
-    db.getUserByUsername.mockReturnValue(Promise.resolve(STORED_USER));
+    db.getUserByEmail.mockReturnValue(Promise.resolve(STORED_USER));
     bcrypt.compare.mockReturnValue(Promise.resolve(false));
 
     await login(req, res);

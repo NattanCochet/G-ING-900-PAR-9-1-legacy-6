@@ -11,6 +11,13 @@ const ITEM = {
     completed: false,
 };
 
+const USER = {
+    id: 'user-id-123',
+    name: 'Alice',
+    email: 'alice@example.com',
+    password: 'hashed_password',
+};
+
 beforeEach(() => {
     if (fs.existsSync(location)) {
         fs.unlinkSync(location);
@@ -71,6 +78,25 @@ test('it returns undefined if item is not found', async () => {
     await db.init();
     const item = await db.getItem('non-existent-id');
     expect(item).toBeUndefined();
+});
+
+test('it can create and retrieve user by email', async () => {
+    await db.init();
+
+    await db.createUser(USER);
+
+    const user = await db.getUserByEmail(USER.email);
+    expect(user).toEqual(USER);
+});
+
+test('it can remove a user', async () => {
+    await db.init();
+    await db.createUser(USER);
+
+    await db.deleteUser(USER.id);
+
+    const user = await db.getUserByEmail(USER.email);
+    expect(user).toBeUndefined();
 });
 
 test('it closes connection correctly on teardown', async () => {

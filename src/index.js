@@ -14,6 +14,7 @@ const deleteUser = require('./routes/deleteUser');
 app.use(express.json());
 app.use(express.static(__dirname + '/front/static'));
 
+app.post('/register', signup);
 app.post('/signup', signup);
 app.post('/login', login);
 app.delete('/users/:id', auth, deleteUser);
@@ -38,4 +39,4 @@ const gracefulShutdown = () => {
 
 process.on('SIGINT', gracefulShutdown);
 process.on('SIGTERM', gracefulShutdown);
-process.on('SIGUSR2', gracefulShutdown); // Sent by nodemon
+process.on('SIGUSR2', gracefulShutdown);
