@@ -104,6 +104,7 @@ async function removeItem(id) {
 }
 
 module.exports = {
+    location,
     init,
     teardown,
     getItems,
