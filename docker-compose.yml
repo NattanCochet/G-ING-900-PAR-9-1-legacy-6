@@ -7,6 +7,8 @@ services:
       - "3000:3000"
     volumes:
       - todo-data:/data
+      - ./src:/app/src
+    command: npm run dev
 
 volumes:
   todo-data:
