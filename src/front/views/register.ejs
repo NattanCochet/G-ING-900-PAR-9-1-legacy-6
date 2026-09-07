@@ -1,31 +1,42 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
     <meta charset="utf-8" />
-    <title>Inscription</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Create Account</title>
+    <link rel="stylesheet" href="/css/auth.css" />
 </head>
 <body>
-    <h2>Inscription</h2>
-    <form id="registerForm">
-        <div>
-            <label for="name">Nom :</label><br>
-            <input type="text" id="name" name="name" required>
+    <main class="auth-shell">
+        <div class="auth-card">
+            <h1 class="auth-title">Create your account</h1>
+            <p class="auth-subtitle">just a few details</p>
+
+            <form id="registerForm" class="auth-form" action="/register" method="POST" novalidate>
+                <div class="field">
+                    <input type="text" id="name" name="name" placeholder=" " required autocomplete="name" />
+                    <label for="name">Name</label>
+                </div>
+
+                <div class="field">
+                    <input type="email" id="email" name="email" placeholder=" " required autocomplete="email" />
+                    <label for="email">Email</label>
+                </div>
+
+                <div class="field">
+                    <input type="password" id="password" name="password" placeholder=" " required autocomplete="new-password" />
+                    <label for="password">Password</label>
+                </div>
+
+                <button type="submit" class="auth-submit">Sign up</button>
+                <p id="errorMsg" style="color:red; display:none;"></p>
+            </form>
+
+            <p class="auth-footer">
+                Already have an account? <a href="/login">Sign in</a>
+            </p>
         </div>
-        <br>
-        <div>
-            <label for="email">Email :</label><br>
-            <input type="email" id="email" name="email" required>
-        </div>
-        <br>
-        <div>
-            <label for="password">Mot de passe :</label><br>
-            <input type="password" id="password" name="password" required>
-        </div>
-        <br>
-        <button type="submit">S'inscrire</button>
-        <p id="errorMsg" style="color:red; display:none;"></p>
-    </form>
-    <p>Vous avez déjà un compte ? <a href="/login">Connectez-vous</a></p>
+    </main>
 
     <script>
         document.getElementById('registerForm').addEventListener('submit', async (e) => {

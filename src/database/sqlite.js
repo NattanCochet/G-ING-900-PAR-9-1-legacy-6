@@ -1,12 +1,13 @@
 const sqlite3 = require('sqlite3').verbose();
 const queries = require('./queries');
 const fs = require('fs');
-const location = process.env.SQLITE_DB_LOCATION || '/etc/todos/todo.db';
+const path = require('path');
+const location = process.env.SQLITE_DB_LOCATION || path.join(__dirname, '..', '..', '.local-data', 'todo.db');
 
 let db;
 
 function init() {
-    const dirName = require('path').dirname(location);
+    const dirName = path.dirname(location);
     if (!fs.existsSync(dirName)) {
         fs.mkdirSync(dirName, { recursive: true });
     }
@@ -144,6 +145,7 @@ async function deleteUser(id) {
 }
 
 module.exports = {
+    location,
     init,
     teardown,
     getItems,
