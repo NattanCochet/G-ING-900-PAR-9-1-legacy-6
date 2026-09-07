@@ -7,6 +7,16 @@ const getItems = require('./routes/getItems');
 const addItem = require('./routes/addItem');
 const updateItem = require('./routes/updateItem');
 const deleteItem = require('./routes/deleteItem');
+const { apiReference } = require('@scalar/express-api-reference');
+const swaggerJsdoc = require('swagger-jsdoc');
+
+const openapiSpec = swaggerJsdoc({
+    definition: {
+        openapi: '3.1.0',
+        info: { title: 'Legacy Project API', version: '0.1' },
+    },
+    apis: [__dirname + '/routes/*.js'],
+});
 const signup = require('./routes/signup');
 const login = require('./routes/login');
 const deleteUser = require('./routes/deleteUser');
@@ -33,6 +43,9 @@ app.get('/items', auth, getItems);
 app.post('/items', auth, addItem);
 app.put('/items/:id', auth, updateItem);
 app.delete('/items/:id', auth, deleteItem);
+
+app.get('/openapi.json', (req, res) => res.send(openapiSpec));
+app.use('/reference', apiReference({ url: '/openapi.json' }));
 
 db.init().then(() => {
     app.listen(process.env.PORT || 3000, () => console.log(`Listening on port ${process.env.PORT || 3000}`));
