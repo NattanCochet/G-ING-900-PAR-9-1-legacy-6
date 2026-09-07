@@ -12,7 +12,7 @@
             <h1 class="auth-title">Create your account</h1>
             <p class="auth-subtitle">just a few details</p>
 
-            <form class="auth-form" action="/register" method="POST" novalidate>
+            <form id="registerForm" class="auth-form" action="/register" method="POST" novalidate>
                 <div class="field">
                     <input type="text" id="name" name="name" placeholder=" " required autocomplete="name" />
                     <label for="name">Name</label>
@@ -29,6 +29,7 @@
                 </div>
 
                 <button type="submit" class="auth-submit">Sign up</button>
+                <p id="errorMsg" style="color:red; display:none;"></p>
             </form>
 
             <p class="auth-footer">
@@ -36,5 +37,36 @@
             </p>
         </div>
     </main>
+
+    <script>
+        document.getElementById('registerForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const name = document.getElementById('name').value;
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const errorMsg = document.getElementById('errorMsg');
+
+            try {
+                const response = await fetch('/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, email, password })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    localStorage.setItem('token', data.token);
+                    window.location.href = '/home';
+                } else {
+                    errorMsg.textContent = data.error || 'Erreur lors de l\'inscription';
+                    errorMsg.style.display = 'block';
+                }
+            } catch (err) {
+                errorMsg.textContent = 'Erreur réseau';
+                errorMsg.style.display = 'block';
+            }
+        });
+    </script>
 </body>
 </html>

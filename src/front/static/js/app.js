@@ -1,3 +1,21 @@
+const fetchWithAuth = async (url, options = {}) => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+        window.location.href = '/login';
+        throw new Error('No token found');
+    }
+    const headers = {
+        ...options.headers,
+        'Authorization': `Bearer ${token}`
+    };
+    const response = await fetch(url, { ...options, headers });
+    if (response.status === 401) {
+        window.location.href = '/login';
+        throw new Error('Unauthorized');
+    }
+    return response;
+};
+
 function App() {
     const { Container, Row, Col } = ReactBootstrap;
     return (
@@ -15,7 +33,7 @@ function TodoListCard() {
     const [items, setItems] = React.useState(null);
 
     React.useEffect(() => {
-        fetch('/items')
+        fetchWithAuth('/items')
             .then(r => r.json())
             .then(setItems);
     }, []);
@@ -76,7 +94,7 @@ function AddItemForm({ onNewItem }) {
     const submitNewItem = e => {
         e.preventDefault();
         setSubmitting(true);
-        fetch('/items', {
+        fetchWithAuth('/items', {
             method: 'POST',
             body: JSON.stringify({ name: newItem }),
             headers: { 'Content-Type': 'application/json' },
@@ -118,7 +136,7 @@ function ItemDisplay({ item, onItemUpdate, onItemRemoval }) {
     const { Container, Row, Col, Button } = ReactBootstrap;
 
     const toggleCompletion = () => {
-        fetch(`/items/${item.id}`, {
+        fetchWithAuth(`/items/${item.id}`, {
             method: 'PUT',
             body: JSON.stringify({
                 name: item.name,
@@ -131,7 +149,7 @@ function ItemDisplay({ item, onItemUpdate, onItemRemoval }) {
     };
 
     const removeItem = () => {
-        fetch(`/items/${item.id}`, { method: 'DELETE' }).then(() =>
+        fetchWithAuth(`/items/${item.id}`, { method: 'DELETE' }).then(() =>
             onItemRemoval(item),
         );
     };

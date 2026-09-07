@@ -5,6 +5,8 @@ services:
       dockerfile: src/Dockerfile
     ports:
       - "3000:3000"
+    env_file:
+      - .env
     volumes:
       - todo-data:/data
       - ./src:/app/src
