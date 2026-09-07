@@ -9,8 +9,6 @@ services:
       - .env
     volumes:
       - todo-data:/data
-      - ./src:/app/src
-    command: npm run dev
 
 volumes:
   todo-data:
