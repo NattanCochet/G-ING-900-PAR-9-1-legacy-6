@@ -8,6 +8,8 @@ jest.mock('mysql2', () => ({
     createPool: jest.fn(),
 }));
 
+process.env.MYSQL_HOST = 'test-mysql-host';
+
 const db = require('../../src/database/mysql');
 
 const ITEM = {
