@@ -8,7 +8,7 @@ module.exports = async (req, res) => {
 
         await db.deleteUser(req.params.id);
         res.sendStatus(200);
-    } catch (err) {
+    } catch {
         res.sendStatus(500);
     }
 };
