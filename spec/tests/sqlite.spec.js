@@ -3,7 +3,7 @@ if (!process.env.SQLITE_DB_LOCATION) {
 }
 const db = require('../../src/database/sqlite');
 const fs = require('fs');
-const location = db.location;
+const location = process.env.SQLITE_DB_LOCATION;
 
 const ITEM = {
     id: '7aef3d7c-d301-4846-8358-2a91ec9d6be3',
