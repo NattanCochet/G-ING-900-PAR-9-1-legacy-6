@@ -2,6 +2,53 @@ const db = require('../database');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 
+/**
+ * @openapi
+ * /login:
+ *   post:
+ *     summary: Login a user
+ *     operationId: login
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *               - password
+ *             properties:
+ *               email:
+ *                 type: string
+ *               password:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Successful login
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 token:
+ *                   type: string
+ *                 user:
+ *                   type: object
+ *                   properties:
+ *                     id:
+ *                       type: string
+ *                     name:
+ *                       type: string
+ *                     email:
+ *                       type: string
+ *       400:
+ *         description: Missing credentials
+ *       401:
+ *         description: Invalid credentials
+ *       500:
+ *         description: Internal server error
+ */
+
 module.exports = async (req, res, next) => {
     try {
         const { email, password } = req.body;
