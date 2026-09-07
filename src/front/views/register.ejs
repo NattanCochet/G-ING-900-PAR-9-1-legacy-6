@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Create Account</title>
+    <link rel="stylesheet" href="/css/auth.css" />
+</head>
+<body>
+    <main class="auth-shell">
+        <div class="auth-card">
+            <h1 class="auth-title">Create your account</h1>
+            <p class="auth-subtitle">just a few details</p>
+
+            <form id="registerForm" class="auth-form" action="/register" method="POST" novalidate>
+                <div class="field">
+                    <input type="text" id="name" name="name" placeholder=" " required autocomplete="name" />
+                    <label for="name">Name</label>
+                </div>
+
+                <div class="field">
+                    <input type="email" id="email" name="email" placeholder=" " required autocomplete="email" />
+                    <label for="email">Email</label>
+                </div>
+
+                <div class="field">
+                    <input type="password" id="password" name="password" placeholder=" " required autocomplete="new-password" />
+                    <label for="password">Password</label>
+                </div>
+
+                <button type="submit" class="auth-submit">Sign up</button>
+                <p id="errorMsg" style="color:red; display:none;"></p>
+            </form>
+
+            <p class="auth-footer">
+                Already have an account? <a href="/login">Sign in</a>
+            </p>
+        </div>
+    </main>
+
+    <script>
+        document.getElementById('registerForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const name = document.getElementById('name').value;
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const errorMsg = document.getElementById('errorMsg');
+
+            try {
+                const response = await fetch('/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, email, password })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    localStorage.setItem('token', data.token);
+                    window.location.href = '/home';
+                } else {
+                    errorMsg.textContent = data.error || 'Erreur lors de l\'inscription';
+                    errorMsg.style.display = 'block';
+                }
+            } catch (err) {
+                errorMsg.textContent = 'Erreur réseau';
+                errorMsg.style.display = 'block';
+            }
+        });
+    </script>
+</body>
+</html>

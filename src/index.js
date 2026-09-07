@@ -1,6 +1,8 @@
+require('dotenv').config();
 const express = require('express');
 const app = express();
 const db = require('./database');
+const auth = require('./middleware/auth');
 const getItems = require('./routes/getItems');
 const addItem = require('./routes/addItem');
 const updateItem = require('./routes/updateItem');
@@ -15,14 +17,32 @@ const openapiSpec = swaggerJsdoc({
     },
     apis: [__dirname + '/routes/*.js'],
 });
+const signup = require('./routes/signup');
+const login = require('./routes/login');
+const deleteUser = require('./routes/deleteUser');
 
 app.use(express.json());
+app.set('view engine', 'ejs');
+app.set('views', __dirname + '/front/views');
 app.use(express.static(__dirname + '/front/static'));
 
-app.get('/items', getItems);
-app.post('/items', addItem);
-app.put('/items/:id', updateItem);
-app.delete('/items/:id', deleteItem);
+app.get('/', (req, res) => {
+    res.redirect('/login');
+});
+
+app.get('/login', (req, res) => res.render('login'));
+app.get('/home', (req, res) => res.render('index'));
+app.get('/register', (req, res) => res.render('register'));
+
+app.post('/register', signup);
+app.post('/signup', signup);
+app.post('/login', login);
+app.delete('/users/:id', auth, deleteUser);
+
+app.get('/items', auth, getItems);
+app.post('/items', auth, addItem);
+app.put('/items/:id', auth, updateItem);
+app.delete('/items/:id', auth, deleteItem);
 
 app.get('/openapi.json', (req, res) => res.send(openapiSpec));
 app.use('/reference', apiReference({ url: '/openapi.json' }));
@@ -36,10 +56,10 @@ db.init().then(() => {
 
 const gracefulShutdown = () => {
     db.teardown()
-        .catch(() => {})
+        .catch(() => { })
         .then(() => process.exit());
 };
 
 process.on('SIGINT', gracefulShutdown);
 process.on('SIGTERM', gracefulShutdown);
-process.on('SIGUSR2', gracefulShutdown); // Sent by nodemon
+process.on('SIGUSR2', gracefulShutdown);

@@ -1,6 +1,7 @@
 const waitPort = require('wait-port');
 const fs = require('fs');
 const mysql = require('mysql2');
+const queries = require('./queries');
 
 const {
     MYSQL_HOST: HOST,
@@ -39,7 +40,7 @@ async function init() {
 
     return new Promise((acc, rej) => {
         pool.query(
-            'CREATE TABLE IF NOT EXISTS todo_items (id varchar(36), name varchar(255), completed boolean) DEFAULT CHARSET utf8mb4',
+            queries.initTableMysql,
             err => {
                 if (err) return rej(err);
 
@@ -61,7 +62,7 @@ async function teardown() {
 
 async function getItems() {
     return new Promise((acc, rej) => {
-        pool.query('SELECT * FROM todo_items', (err, rows) => {
+        pool.query(queries.getItems, (err, rows) => {
             if (err) return rej(err);
             acc(
                 rows.map(item =>
@@ -76,7 +77,7 @@ async function getItems() {
 
 async function getItem(id) {
     return new Promise((acc, rej) => {
-        pool.query('SELECT * FROM todo_items WHERE id=?', [id], (err, rows) => {
+        pool.query(queries.getItemById, [id], (err, rows) => {
             if (err) return rej(err);
             acc(
                 rows.map(item =>
@@ -92,7 +93,7 @@ async function getItem(id) {
 async function storeItem(item) {
     return new Promise((acc, rej) => {
         pool.query(
-            'INSERT INTO todo_items (id, name, completed) VALUES (?, ?, ?)',
+            queries.insertItem,
             [item.id, item.name, item.completed ? 1 : 0],
             err => {
                 if (err) return rej(err);
@@ -105,7 +106,7 @@ async function storeItem(item) {
 async function updateItem(id, item) {
     return new Promise((acc, rej) => {
         pool.query(
-            'UPDATE todo_items SET name=?, completed=? WHERE id=?',
+            queries.updateItem,
             [item.name, item.completed ? 1 : 0, id],
             err => {
                 if (err) return rej(err);
@@ -117,7 +118,7 @@ async function updateItem(id, item) {
 
 async function removeItem(id) {
     return new Promise((acc, rej) => {
-        pool.query('DELETE FROM todo_items WHERE id = ?', [id], err => {
+        pool.query(queries.deleteItem, [id], err => {
             if (err) return rej(err);
             acc();
         });
