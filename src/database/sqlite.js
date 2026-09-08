@@ -20,8 +20,11 @@ function init() {
                 console.log(`Using sqlite database at ${location}`);
 
             db.serialize(() => {
-                db.run(queries.initTableSqlite, err => { if (err) return rej(err); });
-                db.run(queries.initUsersSqlite, err => {
+                db.run('PRAGMA foreign_keys = ON;', err => { if (err) return rej(err); });
+                db.run(queries.initUsersSqlite, err => { if (err) return rej(err); });
+                db.run(queries.initProjectsSqlite, err => { if (err) return rej(err); });
+                db.run(queries.initColumnsSqlite, err => { if (err) return rej(err); });
+                db.run(queries.initTasksSqlite, err => {
                     if (err) return rej(err);
                     acc();
                 });
@@ -39,70 +42,6 @@ async function teardown() {
     });
 }
 
-async function getItems() {
-    return new Promise((acc, rej) => {
-        db.all(queries.getItems, (err, rows) => {
-            if (err) return rej(err);
-            acc(
-                rows.map(item =>
-                    Object.assign({}, item, {
-                        completed: item.completed === 1,
-                    }),
-                ),
-            );
-        });
-    });
-}
-
-async function getItem(id) {
-    return new Promise((acc, rej) => {
-        db.all(queries.getItemById, [id], (err, rows) => {
-            if (err) return rej(err);
-            acc(
-                rows.map(item =>
-                    Object.assign({}, item, {
-                        completed: item.completed === 1,
-                    }),
-                )[0],
-            );
-        });
-    });
-}
-
-async function storeItem(item) {
-    return new Promise((acc, rej) => {
-        db.run(
-            queries.insertItem,
-            [item.id, item.name, item.completed ? 1 : 0],
-            err => {
-                if (err) return rej(err);
-                acc();
-            },
-        );
-    });
-}
-
-async function updateItem(id, item) {
-    return new Promise((acc, rej) => {
-        db.run(
-            queries.updateItem,
-            [item.name, item.completed ? 1 : 0, id],
-            err => {
-                if (err) return rej(err);
-                acc();
-            },
-        );
-    });
-}
-
-async function removeItem(id) {
-    return new Promise((acc, rej) => {
-        db.run(queries.deleteItem, [id], err => {
-            if (err) return rej(err);
-            acc();
-        });
-    });
-}
 
 async function createUser(user) {
     return new Promise((acc, rej) => {
@@ -144,17 +83,225 @@ async function deleteUser(id) {
     });
 }
 
+async function createProject(project) {
+    return new Promise((acc, rej) => {
+        db.run(
+            queries.createProject,
+            [project.id, project.creator_id, project.name, project.description || null],
+            err => {
+                if (err) return rej(err);
+                acc();
+            },
+        );
+    });
+}
+
+async function getProjects(creator_id) {
+    return new Promise((acc, rej) => {
+        const sql = creator_id ? queries.getProjectsByCreator : queries.getAllProjects;
+        const params = creator_id ? [creator_id] : [];
+        db.all(sql, params, (err, rows) => {
+            if (err) return rej(err);
+            acc(rows || []);
+        });
+    });
+}
+
+async function getProject(id) {
+    return new Promise((acc, rej) => {
+        db.all(queries.getProjectById, [id], (err, rows) => {
+            if (err) return rej(err);
+            acc(rows[0]);
+        });
+    });
+}
+
+async function updateProject(id, project) {
+    return new Promise((acc, rej) => {
+        db.run(
+            queries.updateProject,
+            [project.name, project.description || null, id],
+            err => {
+                if (err) return rej(err);
+                acc();
+            },
+        );
+    });
+}
+
+async function deleteProject(id) {
+    return new Promise((acc, rej) => {
+        db.run(queries.deleteProject, [id], err => {
+            if (err) return rej(err);
+            acc();
+        });
+    });
+}
+
+async function createColumn(column) {
+    return new Promise((acc, rej) => {
+        db.run(
+            queries.createColumn,
+            [column.id, column.project_id, column.name, column.description || null],
+            err => {
+                if (err) return rej(err);
+                acc();
+            },
+        );
+    });
+}
+
+async function getColumns(project_id) {
+    return new Promise((acc, rej) => {
+        db.all(queries.getColumnsByProject, [project_id], (err, rows) => {
+            if (err) return rej(err);
+            acc(rows || []);
+        });
+    });
+}
+
+async function getColumn(id) {
+    return new Promise((acc, rej) => {
+        db.all(queries.getColumnById, [id], (err, rows) => {
+            if (err) return rej(err);
+            acc(rows[0]);
+        });
+    });
+}
+
+async function updateColumn(id, column) {
+    return new Promise((acc, rej) => {
+        db.run(
+            queries.updateColumn,
+            [column.name, column.description || null, id],
+            err => {
+                if (err) return rej(err);
+                acc();
+            },
+        );
+    });
+}
+
+async function deleteColumn(id) {
+    return new Promise((acc, rej) => {
+        db.run(queries.deleteColumn, [id], err => {
+            if (err) return rej(err);
+            acc();
+        });
+    });
+}
+
+async function createTask(task) {
+    return new Promise((acc, rej) => {
+        db.run(
+            queries.createTask,
+            [
+                task.id,
+                task.project_id || null,
+                task.column_id || null,
+                task.creator_id || null,
+                task.name,
+                task.description || null,
+                task.completed ? 1 : 0,
+            ],
+            err => {
+                if (err) return rej(err);
+                acc();
+            },
+        );
+    });
+}
+
+async function getTasks(project_id) {
+    return new Promise((acc, rej) => {
+        const sql = project_id ? queries.getTasksByProject : queries.getAllTasks;
+        const params = project_id ? [project_id] : [];
+        db.all(sql, params, (err, rows) => {
+            if (err) return rej(err);
+            acc(
+                (rows || []).map(task =>
+                    Object.assign({}, task, {
+                        completed: task.completed === 1,
+                    }),
+                ),
+            );
+        });
+    });
+}
+
+async function getTasksByColumn(column_id) {
+    return new Promise((acc, rej) => {
+        db.all(queries.getTasksByColumn, [column_id], (err, rows) => {
+            if (err) return rej(err);
+            acc(
+                (rows || []).map(task =>
+                    Object.assign({}, task, {
+                        completed: task.completed === 1,
+                    }),
+                ),
+            );
+        });
+    });
+}
+
+async function getTask(id) {
+    return new Promise((acc, rej) => {
+        db.all(queries.getTaskById, [id], (err, rows) => {
+            if (err) return rej(err);
+            if (!rows || !rows[0]) return acc(undefined);
+            acc(
+                Object.assign({}, rows[0], {
+                    completed: rows[0].completed === 1,
+                }),
+            );
+        });
+    });
+}
+
+async function updateTask(id, task) {
+    return new Promise((acc, rej) => {
+        db.run(
+            queries.updateTask,
+            [task.name, task.description || null, task.completed ? 1 : 0, task.column_id || null, id],
+            err => {
+                if (err) return rej(err);
+                acc();
+            },
+        );
+    });
+}
+
+async function deleteTask(id) {
+    return new Promise((acc, rej) => {
+        db.run(queries.deleteTask, [id], err => {
+            if (err) return rej(err);
+            acc();
+        });
+    });
+}
+
 module.exports = {
     location,
     init,
     teardown,
-    getItems,
-    getItem,
-    storeItem,
-    updateItem,
-    removeItem,
     createUser,
     getUserByEmail,
     getUserById,
     deleteUser,
+    createProject,
+    getProjects,
+    getProject,
+    updateProject,
+    deleteProject,
+    createColumn,
+    getColumns,
+    getColumn,
+    updateColumn,
+    deleteColumn,
+    createTask,
+    getTasks,
+    getTasksByColumn,
+    getTask,
+    updateTask,
+    deleteTask,
 };

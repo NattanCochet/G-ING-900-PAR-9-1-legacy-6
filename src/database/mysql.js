@@ -40,7 +40,7 @@ async function init() {
 
     return new Promise((acc, rej) => {
         pool.query(
-            queries.initTableMysql,
+            queries.initTasksMysql,
             err => {
                 if (err) return rej(err);
 
@@ -60,14 +60,16 @@ async function teardown() {
     });
 }
 
-async function getItems() {
+async function getTasks(project_id) {
     return new Promise((acc, rej) => {
-        pool.query(queries.getItems, (err, rows) => {
+        const sql = project_id ? queries.getTasksByProject : queries.getAllTasks;
+        const params = project_id ? [project_id] : [];
+        pool.query(sql, params, (err, rows) => {
             if (err) return rej(err);
             acc(
-                rows.map(item =>
-                    Object.assign({}, item, {
-                        completed: item.completed === 1,
+                (rows || []).map(task =>
+                    Object.assign({}, task, {
+                        completed: task.completed === 1,
                     }),
                 ),
             );
@@ -75,26 +77,33 @@ async function getItems() {
     });
 }
 
-async function getItem(id) {
+async function getTask(id) {
     return new Promise((acc, rej) => {
-        pool.query(queries.getItemById, [id], (err, rows) => {
+        pool.query(queries.getTaskById, [id], (err, rows) => {
             if (err) return rej(err);
+            if (!rows || !rows[0]) return acc(undefined);
             acc(
-                rows.map(item =>
-                    Object.assign({}, item, {
-                        completed: item.completed === 1,
-                    }),
-                )[0],
+                Object.assign({}, rows[0], {
+                    completed: rows[0].completed === 1,
+                }),
             );
         });
     });
 }
 
-async function storeItem(item) {
+async function createTask(task) {
     return new Promise((acc, rej) => {
         pool.query(
-            queries.insertItem,
-            [item.id, item.name, item.completed ? 1 : 0],
+            queries.createTask,
+            [
+                task.id,
+                task.project_id || null,
+                task.column_id || null,
+                task.creator_id || null,
+                task.name,
+                task.description || null,
+                task.completed ? 1 : 0,
+            ],
             err => {
                 if (err) return rej(err);
                 acc();
@@ -103,11 +112,11 @@ async function storeItem(item) {
     });
 }
 
-async function updateItem(id, item) {
+async function updateTask(id, task) {
     return new Promise((acc, rej) => {
         pool.query(
-            queries.updateItem,
-            [item.name, item.completed ? 1 : 0, id],
+            queries.updateTask,
+            [task.name, task.description || null, task.completed ? 1 : 0, task.column_id || null, id],
             err => {
                 if (err) return rej(err);
                 acc();
@@ -116,9 +125,9 @@ async function updateItem(id, item) {
     });
 }
 
-async function removeItem(id) {
+async function deleteTask(id) {
     return new Promise((acc, rej) => {
-        pool.query(queries.deleteItem, [id], err => {
+        pool.query(queries.deleteTask, [id], err => {
             if (err) return rej(err);
             acc();
         });
@@ -128,9 +137,9 @@ async function removeItem(id) {
 module.exports = {
     init,
     teardown,
-    getItems,
-    getItem,
-    storeItem,
-    updateItem,
-    removeItem,
+    getTasks,
+    getTask,
+    createTask,
+    updateTask,
+    deleteTask,
 };
