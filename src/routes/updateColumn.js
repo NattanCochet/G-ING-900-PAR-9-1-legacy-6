@@ -1,5 +1,36 @@
 const db = require('../database');
 
+/**
+ * @openapi
+ * /columns/{id}:
+ *   put:
+ *     summary: Update a column
+ *     operationId: updateColumn
+ *     parameters:
+ *       - name: id
+ *         in: path
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               name:
+ *                 type: string
+ *               description:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Column updated successfully
+ *       404:
+ *         description: Column not found
+ *       500:
+ *         description: Internal server error
+ */
 module.exports = async (req, res) => {
     try {
         const existing = await db.getColumn(req.params.id);
