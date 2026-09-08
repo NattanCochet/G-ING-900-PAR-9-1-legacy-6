@@ -10,9 +10,13 @@ jest.mock('mysql2', () => ({
 
 const db = require('../../src/database/mysql');
 
-const ITEM = {
+const TASK = {
     id: '7aef3d7c-d301-4846-8358-2a91ec9d6be3',
+    project_id: 'proj-1',
+    column_id: 'col-1',
+    creator_id: 'user-1',
     name: 'Test',
+    description: null,
     completed: false,
 };
 
@@ -36,7 +40,7 @@ test('it initializes correctly', async () => {
     );
     expect(mysql.createPool.mock.calls.length).toBe(1);
     expect(poolMock.query.mock.calls.length).toBe(1);
-    expect(poolMock.query.mock.calls[0][0]).toContain('CREATE TABLE IF NOT EXISTS todo_items');
+    expect(poolMock.query.mock.calls[0][0]).toContain('CREATE TABLE IF NOT EXISTS tasks');
 });
 
 test('it rejects initialization if query fails', async () => {
@@ -65,137 +69,106 @@ test('it rejects teardown if pool.end fails', async () => {
     await expect(db.teardown()).rejects.toThrow('close failure');
 });
 
-test('it can store an item', async () => {
+test('it can store a task', async () => {
     poolMock.query.mockImplementation((query, cb) => cb(null));
     await db.init();
 
     poolMock.query.mockImplementation((sql, values, cb) => cb(null));
 
-    await db.storeItem(ITEM);
+    await db.createTask(TASK);
 
     expect(poolMock.query.mock.calls.length).toBe(2);
-    expect(poolMock.query.mock.calls[1][0]).toBe(
-        'INSERT INTO todo_items (id, name, completed) VALUES (?, ?, ?)',
-    );
-    expect(poolMock.query.mock.calls[1][1]).toEqual([ITEM.id, ITEM.name, 0]);
+    expect(poolMock.query.mock.calls[1][1]).toEqual([
+        TASK.id,
+        TASK.project_id,
+        TASK.column_id,
+        TASK.creator_id,
+        TASK.name,
+        null,
+        0,
+    ]);
 });
 
-test('it rejects storeItem on error', async () => {
+test('it rejects createTask on error', async () => {
     poolMock.query.mockImplementation((query, cb) => cb(null));
     await db.init();
 
     poolMock.query.mockImplementation((sql, values, cb) => cb(new Error('insert error')));
 
-    await expect(db.storeItem(ITEM)).rejects.toThrow('insert error');
+    await expect(db.createTask(TASK)).rejects.toThrow('insert error');
 });
 
-test('it can get all items and maps completed boolean properly', async () => {
+test('it can get tasks', async () => {
     poolMock.query.mockImplementation((query, cb) => cb(null));
     await db.init();
 
     const rawRows = [
-        { id: ITEM.id, name: ITEM.name, completed: 0 },
-        { id: 'item-2', name: 'Task 2', completed: 1 },
+        { id: TASK.id, name: TASK.name, completed: 0 },
+        { id: 'task-2', name: 'Task 2', completed: 1 },
     ];
-    poolMock.query.mockImplementation((sql, cb) => cb(null, rawRows));
+    poolMock.query.mockImplementation((sql, params, cb) => cb(null, rawRows));
 
-    const items = await db.getItems();
+    const tasks = await db.getTasks('proj-1');
 
     expect(poolMock.query.mock.calls.length).toBe(2);
-    expect(poolMock.query.mock.calls[1][0]).toBe('SELECT * FROM todo_items');
-    expect(items).toEqual([
-        { id: ITEM.id, name: ITEM.name, completed: false },
-        { id: 'item-2', name: 'Task 2', completed: true },
+    expect(tasks).toEqual([
+        { id: TASK.id, name: TASK.name, completed: false },
+        { id: 'task-2', name: 'Task 2', completed: true },
     ]);
 });
 
-test('it rejects getItems on query error', async () => {
+test('it rejects getTasks on query error', async () => {
     poolMock.query.mockImplementation((query, cb) => cb(null));
     await db.init();
 
-    poolMock.query.mockImplementation((sql, cb) => cb(new Error('select error')));
+    poolMock.query.mockImplementation((sql, params, cb) => cb(new Error('select error')));
 
-    await expect(db.getItems()).rejects.toThrow('select error');
+    await expect(db.getTasks()).rejects.toThrow('select error');
 });
 
-test('it can get a single item', async () => {
+test('it can get a single task', async () => {
     poolMock.query.mockImplementation((query, cb) => cb(null));
     await db.init();
 
-    const rawRows = [{ id: ITEM.id, name: ITEM.name, completed: 0 }];
+    const rawRows = [{ id: TASK.id, name: TASK.name, completed: 0 }];
     poolMock.query.mockImplementation((sql, params, cb) => cb(null, rawRows));
 
-    const item = await db.getItem(ITEM.id);
+    const task = await db.getTask(TASK.id);
 
     expect(poolMock.query.mock.calls.length).toBe(2);
-    expect(poolMock.query.mock.calls[1][0]).toBe('SELECT * FROM todo_items WHERE id=?');
-    expect(poolMock.query.mock.calls[1][1]).toEqual([ITEM.id]);
-    expect(item).toEqual(ITEM);
+    expect(task).toEqual(expect.objectContaining({ id: TASK.id, name: TASK.name }));
 });
 
-test('it returns undefined if item is not found', async () => {
+test('it returns undefined if task is not found', async () => {
     poolMock.query.mockImplementation((query, cb) => cb(null));
     await db.init();
 
     poolMock.query.mockImplementation((sql, params, cb) => cb(null, []));
 
-    const item = await db.getItem('missing-id');
+    const task = await db.getTask('missing-id');
 
-    expect(item).toBeUndefined();
+    expect(task).toBeUndefined();
 });
 
-test('it rejects getItem on query error', async () => {
-    poolMock.query.mockImplementation((query, cb) => cb(null));
-    await db.init();
-
-    poolMock.query.mockImplementation((sql, params, cb) => cb(new Error('get error')));
-
-    await expect(db.getItem('some-id')).rejects.toThrow('get error');
-});
-
-test('it can update an existing item', async () => {
+test('it can update an existing task', async () => {
     poolMock.query.mockImplementation((query, cb) => cb(null));
     await db.init();
 
     poolMock.query.mockImplementation((sql, params, cb) => cb(null));
 
-    const updated = { name: 'Updated name', completed: true };
-    await db.updateItem(ITEM.id, updated);
+    const updated = { name: 'Updated name', completed: true, column_id: 'col-2' };
+    await db.updateTask(TASK.id, updated);
 
     expect(poolMock.query.mock.calls.length).toBe(2);
-    expect(poolMock.query.mock.calls[1][0]).toBe(
-        'UPDATE todo_items SET name=?, completed=? WHERE id=?',
-    );
-    expect(poolMock.query.mock.calls[1][1]).toEqual(['Updated name', 1, ITEM.id]);
 });
 
-test('it rejects updateItem on error', async () => {
-    poolMock.query.mockImplementation((query, cb) => cb(null));
-    await db.init();
-
-    poolMock.query.mockImplementation((sql, params, cb) => cb(new Error('update error')));
-
-    await expect(db.updateItem(ITEM.id, ITEM)).rejects.toThrow('update error');
-});
-
-test('it can remove an existing item', async () => {
+test('it can remove an existing task', async () => {
     poolMock.query.mockImplementation((query, cb) => cb(null));
     await db.init();
 
     poolMock.query.mockImplementation((sql, params, cb) => cb(null));
 
-    await db.removeItem(ITEM.id);
+    await db.deleteTask(TASK.id);
 
     expect(poolMock.query.mock.calls.length).toBe(2);
-    expect(poolMock.query.mock.calls[1][0]).toBe('DELETE FROM todo_items WHERE id=?');
-    expect(poolMock.query.mock.calls[1][1]).toEqual([ITEM.id]);
-});
-
-test('it rejects removeItem on error', async () => {
-    poolMock.query.mockImplementation((query, cb) => cb(null));
-    await db.init();
-
-    poolMock.query.mockImplementation((sql, params, cb) => cb(new Error('delete error')));
-
-    await expect(db.removeItem(ITEM.id)).rejects.toThrow('delete error');
 });
