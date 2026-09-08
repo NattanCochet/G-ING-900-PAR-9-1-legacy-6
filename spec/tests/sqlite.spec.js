@@ -40,7 +40,9 @@ beforeEach(async () => {
     if (fs.existsSync(location)) {
         try {
             await db.teardown();
-        } catch (e) {}
+        } catch {
+            // ignore
+        }
         fs.unlinkSync(location);
     }
 });
