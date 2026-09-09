@@ -1,5 +1,25 @@
 const db = require('../database');
 
+/**
+ * @openapi
+ * /users/{id}:
+ *   delete:
+ *     summary: Delete a user
+ *     operationId: deleteUser
+ *     parameters:
+ *       - name: id
+ *         in: path
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: User deleted successfully
+ *       403:
+ *         description: Forbidden
+ *       500:
+ *         description: Internal server error
+ */
 module.exports = async (req, res) => {
     try {
         if (req.user && req.user.id !== req.params.id) {

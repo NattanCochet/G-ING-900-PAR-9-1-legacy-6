@@ -1,5 +1,40 @@
 const db = require('../database');
 
+/**
+ * @openapi
+ * /columns:
+ *   get:
+ *     summary: Get all columns for a project (using query param)
+ *     operationId: getColumnsQuery
+ *     parameters:
+ *       - name: project_id
+ *         in: query
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Successful response
+ *       400:
+ *         description: Project ID is required
+ *       500:
+ *         description: Internal server error
+ * /projects/{projectId}/columns:
+ *   get:
+ *     summary: Get all columns for a project
+ *     operationId: getColumns
+ *     parameters:
+ *       - name: projectId
+ *         in: path
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Successful response
+ *       500:
+ *         description: Internal server error
+ */
 const getColumns = async (req, res) => {
     try {
         const projectId = req.params.projectId || req.query.project_id;
@@ -13,6 +48,26 @@ const getColumns = async (req, res) => {
     }
 };
 
+/**
+ * @openapi
+ * /columns/{id}:
+ *   get:
+ *     summary: Get a column by ID
+ *     operationId: getColumnById
+ *     parameters:
+ *       - name: id
+ *         in: path
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Successful response
+ *       404:
+ *         description: Column not found
+ *       500:
+ *         description: Internal server error
+ */
 const getColumnById = async (req, res) => {
     try {
         const column = await db.getColumn(req.params.id);
