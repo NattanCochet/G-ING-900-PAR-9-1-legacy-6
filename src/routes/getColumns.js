@@ -9,7 +9,7 @@ const db = require('../database');
  *     parameters:
  *       - name: project_id
  *         in: query
- *         required: false
+ *         required: true
  *         schema:
  *           type: string
  *     responses:
