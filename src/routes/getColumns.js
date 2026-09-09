@@ -32,8 +32,6 @@ const db = require('../database');
  *     responses:
  *       200:
  *         description: Successful response
- *       400:
- *         description: Project ID is required
  *       500:
  *         description: Internal server error
  */
