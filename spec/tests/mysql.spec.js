@@ -8,6 +8,13 @@ jest.mock('mysql2', () => ({
     createPool: jest.fn(),
 }));
 
+const originalMysqlHost = process.env.MYSQL_HOST;
+process.env.MYSQL_HOST = 'test-mysql-host';
+
+afterAll(() => {
+    if (originalMysqlHost === undefined) delete process.env.MYSQL_HOST;
+    else process.env.MYSQL_HOST = originalMysqlHost;
+});
 const db = require('../../src/database/mysql');
 
 const TASK = {
