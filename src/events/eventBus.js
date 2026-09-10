@@ -1,7 +1,7 @@
 const { EventEmitter } = require('events');
 
 // A single process-wide bus: routes publish domain events, listeners subscribe independently.
-class EventBus extends EventEmitter {
+class eventBus extends EventEmitter {
     // A misbehaving listener must never crash the request that triggered the event.
     emit(event, ...args) {
         try {
@@ -13,4 +13,4 @@ class EventBus extends EventEmitter {
     }
 }
 
-module.exports = new EventBus();
+module.exports = new eventBus();
