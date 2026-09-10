@@ -1,4 +1,5 @@
 const db = require('../database');
+const { eventBus, eventTypes } = require('../events');
 
 /**
  * @openapi
@@ -51,6 +52,7 @@ module.exports = async (req, res) => {
 
         await db.updateTask(req.params.id, updated);
         const result = await db.getTask(req.params.id);
+        eventBus.emit(eventTypes.TASK_UPDATED, result);
         res.send(result);
     } catch (err) {
         res.status(500).send({ error: err.message });

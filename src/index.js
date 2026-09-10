@@ -3,6 +3,7 @@ const express = require('express');
 const app = express();
 const db = require('./database');
 const auth = require('./middleware/auth');
+require('./events'); // registers domain-event listeners (audit log, ...)
 const { apiReference } = require('@scalar/express-api-reference');
 const swaggerJsdoc = require('swagger-jsdoc');
 

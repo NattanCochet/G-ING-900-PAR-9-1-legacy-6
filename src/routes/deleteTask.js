@@ -1,4 +1,5 @@
 const db = require('../database');
+const { eventBus, eventTypes } = require('../events');
 
 /**
  * @openapi
@@ -21,6 +22,7 @@ const db = require('../database');
 module.exports = async (req, res) => {
     try {
         await db.deleteTask(req.params.id);
+        eventBus.emit(eventTypes.TASK_DELETED, { id: req.params.id });
         res.sendStatus(200);
     } catch (err) {
         res.status(500).send({ error: err.message });

@@ -1,4 +1,5 @@
 const db = require('../database');
+const { eventBus, eventTypes } = require('../events');
 
 /**
  * @openapi
@@ -21,6 +22,7 @@ module.exports = async (req, res) => {
 
         await db.updateProject(req.params.id, updated);
         const result = await db.getProject(req.params.id);
+        eventBus.emit(eventTypes.PROJECT_UPDATED, result);
         res.send(result);
     } catch (err) {
         res.status(500).send({ error: err.message });

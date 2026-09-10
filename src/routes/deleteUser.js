@@ -1,4 +1,5 @@
 const db = require('../database');
+const { eventBus, eventTypes } = require('../events');
 
 /**
  * @openapi
@@ -27,6 +28,7 @@ module.exports = async (req, res) => {
         }
 
         await db.deleteUser(req.params.id);
+        eventBus.emit(eventTypes.USER_DELETED, { id: req.params.id });
         res.sendStatus(200);
     } catch {
         res.sendStatus(500);
