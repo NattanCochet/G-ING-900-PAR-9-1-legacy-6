@@ -1,5 +1,6 @@
 const db = require('../database');
 const { v4: uuid } = require('uuid');
+const { eventBus, eventTypes } = require('../events');
 
 /**
  * @openapi
@@ -43,6 +44,7 @@ module.exports = async (req, res) => {
         };
 
         await db.createProject(project);
+        eventBus.emit(eventTypes.PROJECT_CREATED, project);
         res.status(201).send(project);
     } catch (err) {
         res.status(500).send({ error: err.message });

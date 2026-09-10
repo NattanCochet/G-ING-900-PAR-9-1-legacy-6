@@ -1,5 +1,6 @@
 const db = require('../database');
 const { v4: uuid } = require('uuid');
+const { eventBus, eventTypes } = require('../events');
 
 /**
  * @openapi
@@ -28,6 +29,7 @@ module.exports = async (req, res) => {
         };
 
         await db.createColumn(column);
+        eventBus.emit(eventTypes.COLUMN_CREATED, column);
         res.status(201).send(column);
     } catch (err) {
         res.status(500).send({ error: err.message });
