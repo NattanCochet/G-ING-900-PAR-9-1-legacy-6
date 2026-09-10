@@ -6,7 +6,7 @@ on:
       - dev
 
 env:
-  IMAGE_NAME: epidrill/legacy-app
+  IMAGE_NAME: pilebunker/legacy-app
 
 jobs:
   publish:
