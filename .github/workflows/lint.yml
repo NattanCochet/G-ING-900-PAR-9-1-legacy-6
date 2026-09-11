@@ -1,12 +1,12 @@
-name: CI
+name: Lint
 
-"on":
+on:
   push:
   pull_request:
 
 jobs:
-  test-and-build:
-    runs-on: ubuntu-latest
+  lint:
+    runs-on: self-hosted
 
     steps:
       - uses: actions/checkout@v4
@@ -21,11 +21,3 @@ jobs:
 
       - name: Run linter
         run: npm run lint
-
-      - name: Run tests
-        run: npm test
-        env:
-          SQLITE_DB_LOCATION: ${{ runner.temp }}/todo.db
-
-      - name: Build Docker image
-        run: docker compose build

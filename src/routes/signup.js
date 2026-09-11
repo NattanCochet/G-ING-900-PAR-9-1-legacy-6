@@ -2,6 +2,7 @@ const db = require('../database');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { v4: uuid } = require('uuid');
+const { eventBus, eventTypes } = require('../events');
 
 /**
  * @openapi
@@ -70,6 +71,7 @@ module.exports = async (req, res, next) => {
         const user = { id: uuid(), name, email, password: hashedPassword };
 
         await db.createUser(user);
+        eventBus.emit(eventTypes.USER_CREATED, { id: user.id, name: user.name, email: user.email });
 
         const token = jwt.sign(
             { id: user.id, email: user.email },
