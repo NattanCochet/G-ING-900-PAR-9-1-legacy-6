@@ -26,14 +26,18 @@ module.exports = {
     updateColumn: 'UPDATE columns SET name=?, description=? WHERE id=?',
     deleteColumn: 'DELETE FROM columns WHERE id=?',
 
-    // Tasks (Taches: id, project_id, column_id, creator_id, name, description, completed)
-    initTasksSqlite: 'CREATE TABLE IF NOT EXISTS tasks (id varchar(36) PRIMARY KEY, project_id varchar(36), column_id varchar(36), creator_id varchar(36), name varchar(255) NOT NULL, description text, completed boolean DEFAULT 0, FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE, FOREIGN KEY (column_id) REFERENCES columns(id) ON DELETE CASCADE, FOREIGN KEY (creator_id) REFERENCES users(id) ON DELETE CASCADE)',
-    initTasksMysql: 'CREATE TABLE IF NOT EXISTS tasks (id varchar(36) PRIMARY KEY, project_id varchar(36), column_id varchar(36), creator_id varchar(36), name varchar(255) NOT NULL, description text, completed boolean DEFAULT 0, FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE, FOREIGN KEY (column_id) REFERENCES columns(id) ON DELETE CASCADE, FOREIGN KEY (creator_id) REFERENCES users(id) ON DELETE CASCADE) DEFAULT CHARSET utf8mb4',
-    createTask: 'INSERT INTO tasks (id, project_id, column_id, creator_id, name, description, completed) VALUES (?, ?, ?, ?, ?, ?, ?)',
+    // Tasks (Taches: id, project_id, column_id, creator_id, name, description, completed, deadline, priority)
+    initTasksSqlite: 'CREATE TABLE IF NOT EXISTS tasks (id varchar(36) PRIMARY KEY, project_id varchar(36), column_id varchar(36), creator_id varchar(36), name varchar(255) NOT NULL, description text, completed boolean DEFAULT 0, deadline text, priority varchar(50), FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE, FOREIGN KEY (column_id) REFERENCES columns(id) ON DELETE CASCADE, FOREIGN KEY (creator_id) REFERENCES users(id) ON DELETE CASCADE)',
+    initTasksMysql: 'CREATE TABLE IF NOT EXISTS tasks (id varchar(36) PRIMARY KEY, project_id varchar(36), column_id varchar(36), creator_id varchar(36), name varchar(255) NOT NULL, description text, completed boolean DEFAULT 0, deadline date, priority varchar(50), FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE, FOREIGN KEY (column_id) REFERENCES columns(id) ON DELETE CASCADE, FOREIGN KEY (creator_id) REFERENCES users(id) ON DELETE CASCADE) DEFAULT CHARSET utf8mb4',
+    alterTasksAddDeadlineSqlite: 'ALTER TABLE tasks ADD COLUMN deadline text',
+    alterTasksAddPrioritySqlite: 'ALTER TABLE tasks ADD COLUMN priority varchar(50)',
+    alterTasksAddDeadlineMysql: 'ALTER TABLE tasks ADD COLUMN deadline date',
+    alterTasksAddPriorityMysql: 'ALTER TABLE tasks ADD COLUMN priority varchar(50)',
+    createTask: 'INSERT INTO tasks (id, project_id, column_id, creator_id, name, description, completed, deadline, priority) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
     getTasksByProject: 'SELECT * FROM tasks WHERE project_id=?',
     getTasksByColumn: 'SELECT * FROM tasks WHERE column_id=?',
     getAllTasks: 'SELECT * FROM tasks',
     getTaskById: 'SELECT * FROM tasks WHERE id=?',
-    updateTask: 'UPDATE tasks SET name=?, description=?, completed=?, column_id=? WHERE id=?',
+    updateTask: 'UPDATE tasks SET name=?, description=?, completed=?, column_id=?, deadline=?, priority=? WHERE id=?',
     deleteTask: 'DELETE FROM tasks WHERE id=?',
 };

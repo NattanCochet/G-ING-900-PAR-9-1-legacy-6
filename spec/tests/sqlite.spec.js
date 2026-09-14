@@ -34,6 +34,8 @@ const TASK = {
     name: 'Premiere tache',
     description: 'Description de la tache',
     completed: false,
+    deadline: '2026-12-31',
+    priority: 'high',
 };
 
 beforeEach(async () => {
@@ -122,10 +124,12 @@ test('it can create, get, update, and delete tasks', async () => {
     expect(tasks[0].name).toBe(TASK.name);
     expect(tasks[0].completed).toBe(false);
 
-    await db.updateTask(TASK.id, { name: 'Tache finie', description: 'Done', completed: true, column_id: COLUMN.id });
+    await db.updateTask(TASK.id, { name: 'Tache finie', description: 'Done', completed: true, column_id: COLUMN.id, deadline: '2026-12-31', priority: 'high' });
     const updated = await db.getTask(TASK.id);
     expect(updated.name).toBe('Tache finie');
     expect(updated.completed).toBe(true);
+    expect(updated.deadline).toBe('2026-12-31');
+    expect(updated.priority).toBe('high');
 
     await db.deleteTask(TASK.id);
     const afterDelete = await db.getTask(TASK.id);
