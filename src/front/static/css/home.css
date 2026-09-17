@@ -51,7 +51,13 @@ body {
 
 .greeting {
   font-size: 14px;
-  color: var(--text-secondary);
+  font-weight: 500;
+  color: var(--text);
+}
+
+:root:not(.dark-theme) .greeting,
+:root.light-theme .greeting {
+  color: #ffffff;
 }
 
 .icon-btn {
@@ -723,3 +729,75 @@ body {
     font-size: 26px;
   }
 }
+
+/* Toaster */
+.toaster-container {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  z-index: 9999;
+}
+.toast {
+  background: var(--card-bg);
+  color: var(--text);
+  padding: 12px 20px;
+  border-radius: 8px;
+  box-shadow: var(--shadow);
+  border-left: 4px solid var(--blue);
+  animation: slideInRight 0.3s ease forwards, fadeOut 0.3s ease 2.7s forwards;
+  font-size: 14px;
+  font-weight: 500;
+}
+.toast.success { border-left-color: #34c759; }
+.toast.error { border-left-color: var(--red); }
+.toast.warning { border-left-color: #ffcc00; }
+
+@keyframes slideInRight {
+  from { transform: translateX(100%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+@keyframes fadeOut {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+/* Theme Toggle */
+.theme-btn {
+  font-size: 18px;
+}
+
+/* Drag and Drop */
+.task-card.dragging {
+  opacity: 0.5;
+  box-shadow: var(--shadow);
+  transform: scale(1.02);
+}
+.task-list {
+  min-height: 20px; /* Make sure empty list is droppable */
+  transition: background 0.2s ease;
+}
+.task-list.drag-over {
+  background: rgba(0, 113, 227, 0.05);
+  border-radius: 12px;
+}
+
+/* Badges */
+.task-meta {
+  display: flex;
+  gap: 6px;
+  margin-top: 6px;
+  flex-wrap: wrap;
+}
+.task-badge {
+  font-size: 11px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-weight: 600;
+}
+.task-badge.priority-high { background: rgba(255, 59, 48, 0.1); color: var(--red); }
+.task-badge.priority-medium { background: rgba(255, 204, 0, 0.1); color: #d4a000; }
+.task-badge.priority-low { background: rgba(52, 199, 89, 0.1); color: #28a745; }
+.task-badge.deadline { background: rgba(0, 113, 227, 0.1); color: var(--blue); }

@@ -16,6 +16,7 @@
             </div>
             <div class="topbar-right">
                 <span class="greeting" id="greeting"></span>
+                <button class="icon-btn theme-btn" id="themeBtn" title="Toggle Theme" aria-label="Toggle Theme">&#9728;</button>
                 <button class="icon-btn" id="logoutBtn" title="Sign out" aria-label="Sign out">&#9099;</button>
             </div>
         </div>
@@ -92,6 +93,19 @@
                     <textarea id="taskModalDescription" placeholder=" " rows="4"></textarea>
                     <label for="taskModalDescription">Description (optional)</label>
                 </div>
+                <div class="field">
+                    <input type="date" id="taskModalDeadline" placeholder=" " autocomplete="off" />
+                    <label for="taskModalDeadline">Deadline</label>
+                </div>
+                <div class="field" style="display: flex; flex-direction: column;">
+                    <select id="taskModalPriority" style="width: 100%; height: 50px; padding: 18px 16px 6px; font-size: 16px; font-family: inherit; color: var(--text); background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; outline: none; appearance: none;">
+                        <option value="none">None</option>
+                        <option value="low">Low</option>
+                        <option value="medium">Medium</option>
+                        <option value="high">High</option>
+                    </select>
+                    <label for="taskModalPriority" style="top: 7px; font-size: 11px;">Priority</label>
+                </div>
                 <div class="modal-actions">
                     <button type="button" class="secondary-btn" id="cancelTaskBtn">Cancel</button>
                     <button type="submit" class="primary-btn">Save</button>
@@ -99,6 +113,8 @@
             </form>
         </div>
     </div>
+
+    <div id="toasterContainer" class="toaster-container"></div>
 
     <script src="/js/dashboard.js"></script>
 </body>

@@ -5,21 +5,76 @@
         return;
     }
 
-    const fetchWithAuth = async (url, options = {}) => {
-        const response = await fetch(url, {
-            ...options,
-            headers: {
-                ...options.headers,
-                Authorization: `Bearer ${token}`,
-            },
-        });
-        if (response.status === 401) {
-            localStorage.removeItem('token');
-            localStorage.removeItem('user');
-            window.location.href = '/login';
-            throw new Error('Unauthorized');
+    const initTheme = () => {
+        const savedTheme = localStorage.getItem('theme') || 'system';
+        if (savedTheme === 'dark') {
+            document.documentElement.classList.add('dark-theme');
+            document.documentElement.classList.remove('light-theme');
+        } else if (savedTheme === 'light') {
+            document.documentElement.classList.add('light-theme');
+            document.documentElement.classList.remove('dark-theme');
         }
-        return response;
+    };
+    initTheme();
+
+    const toggleTheme = () => {
+        const isDark = document.documentElement.classList.contains('dark-theme') ||
+            (!document.documentElement.classList.contains('light-theme') && window.matchMedia('(prefers-color-scheme: dark)').matches);
+
+        if (isDark) {
+            document.documentElement.classList.add('light-theme');
+            document.documentElement.classList.remove('dark-theme');
+            localStorage.setItem('theme', 'light');
+        } else {
+            document.documentElement.classList.add('dark-theme');
+            document.documentElement.classList.remove('light-theme');
+            localStorage.setItem('theme', 'dark');
+        }
+    };
+    document.getElementById('themeBtn')?.addEventListener('click', toggleTheme);
+
+    const showToast = (message, type = 'info') => {
+        const container = document.getElementById('toasterContainer');
+        if (!container) return;
+        const toast = document.createElement('div');
+        toast.className = `toast ${type}`;
+        toast.textContent = message;
+        container.appendChild(toast);
+        setTimeout(() => toast.remove(), 3000);
+    };
+
+    window.addEventListener('app-notification', (e) => {
+        if (e.detail && e.detail.message) {
+            showToast(e.detail.message, e.detail.type || 'info');
+        }
+    });
+
+    const fetchWithAuth = async (url, options = {}) => {
+        try {
+            const response = await fetch(url, {
+                ...options,
+                headers: {
+                    ...options.headers,
+                    Authorization: `Bearer ${token}`,
+                },
+            });
+            if (response.status === 401) {
+                localStorage.removeItem('token');
+                localStorage.removeItem('user');
+                window.location.href = '/login';
+                throw new Error('Unauthorized');
+            }
+            if (!response.ok) {
+                const err = await response.text();
+                showToast(err || 'An error occurred', 'error');
+            }
+            return response;
+        } catch (error) {
+            if (error.message !== 'Unauthorized') {
+                showToast(error.message, 'error');
+            }
+            throw error;
+        }
     };
 
     const escapeHtml = (str) =>
@@ -177,6 +232,33 @@
         const taskList = el.querySelector('.task-list');
         columnTasks.forEach((task) => taskList.appendChild(renderTask(task)));
 
+        taskList.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+            taskList.classList.add('drag-over');
+        });
+        taskList.addEventListener('dragleave', () => {
+            taskList.classList.remove('drag-over');
+        });
+        taskList.addEventListener('drop', async (e) => {
+            e.preventDefault();
+            taskList.classList.remove('drag-over');
+            const taskId = e.dataTransfer.getData('text/plain');
+            if (!taskId) return;
+            const task = tasks.find(t => t.id == taskId);
+            if (task && task.column_id !== column.id) {
+                task.column_id = column.id;
+                renderBoard();
+                await fetchWithAuth(`/tasks/${task.id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ column_id: column.id })
+                });
+                await loadBoard();
+                showToast('Task moved successfully', 'success');
+            }
+        });
+
         const addTaskBtn = el.querySelector('.add-task-btn');
         addTaskBtn.addEventListener('click', () => {
             const form = document.createElement('form');
@@ -195,6 +277,7 @@
                 const name = input.value.trim();
                 if (!name) return cancel();
                 await createTask(column, name);
+                showToast('Task added', 'success');
             });
 
             input.addEventListener('blur', () => {
@@ -208,17 +291,38 @@
     const renderTask = (task) => {
         const el = document.createElement('div');
         el.className = `task-card${task.completed ? ' completed' : ''}`;
+        el.draggable = true;
+
+        let badgesHtml = '';
+        if (task.priority && task.priority !== 'none') {
+            badgesHtml += `<span class="task-badge priority-${task.priority}">${task.priority.toUpperCase()}</span>`;
+        }
+        if (task.deadline) {
+            badgesHtml += `<span class="task-badge deadline">&#128197; ${task.deadline}</span>`;
+        }
+
         el.innerHTML = `
             <input type="checkbox" class="task-checkbox" ${task.completed ? 'checked' : ''} aria-label="Toggle task completion" />
             <div class="task-body">
                 <span class="task-name">${escapeHtml(task.name)}</span>
                 ${task.description ? `<p class="task-description">${escapeHtml(task.description)}</p>` : ''}
+                ${badgesHtml ? `<div class="task-meta">${badgesHtml}</div>` : ''}
             </div>
             <div class="task-actions">
                 <button class="task-icon-btn task-edit" title="Edit task" aria-label="Edit task">&#9998;</button>
                 <button class="task-icon-btn task-remove" title="Delete task" aria-label="Delete task">&times;</button>
             </div>
         `;
+
+        el.addEventListener('dragstart', (e) => {
+            e.dataTransfer.setData('text/plain', task.id);
+            e.dataTransfer.effectAllowed = 'move';
+            setTimeout(() => el.classList.add('dragging'), 0);
+        });
+        el.addEventListener('dragend', () => {
+            el.classList.remove('dragging');
+        });
+
         el.querySelector('.task-checkbox').addEventListener('change', () => toggleTask(task));
         el.querySelector('.task-edit').addEventListener('click', () => openTaskModal(task));
         el.querySelector('.task-remove').addEventListener('click', () => deleteTask(task));
@@ -331,11 +435,11 @@
         await loadBoard();
     };
 
-    const updateTask = async (task, { name, description }) => {
+    const updateTask = async (task, { name, description, priority, deadline }) => {
         await fetchWithAuth(`/tasks/${task.id}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ name, description }),
+            body: JSON.stringify({ name, description, priority, deadline }),
         });
         await loadBoard();
     };
@@ -420,6 +524,8 @@
     const taskForm = document.getElementById('taskForm');
     const taskModalNameInput = document.getElementById('taskModalName');
     const taskModalDescriptionInput = document.getElementById('taskModalDescription');
+    const taskModalDeadlineInput = document.getElementById('taskModalDeadline');
+    const taskModalPriorityInput = document.getElementById('taskModalPriority');
 
     let editingTask = null;
 
@@ -428,6 +534,8 @@
         taskForm.reset();
         taskModalNameInput.value = task.name;
         taskModalDescriptionInput.value = task.description || '';
+        taskModalDeadlineInput.value = task.deadline || '';
+        taskModalPriorityInput.value = task.priority || 'none';
         taskModalOverlay.hidden = false;
         taskModalNameInput.focus();
     };
@@ -446,9 +554,12 @@
         e.preventDefault();
         const name = taskModalNameInput.value.trim();
         const description = taskModalDescriptionInput.value.trim();
+        const deadline = taskModalDeadlineInput.value;
+        const priority = taskModalPriorityInput.value;
         if (!name || !editingTask) return;
 
-        await updateTask(editingTask, { name, description: description || null });
+        await updateTask(editingTask, { name, description: description || null, deadline: deadline || null, priority });
+        showToast('Task updated', 'success');
         closeTaskModal();
     });
 
