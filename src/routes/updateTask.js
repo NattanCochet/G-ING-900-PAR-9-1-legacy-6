@@ -28,6 +28,11 @@ const { eventBus, eventTypes } = require('../events');
  *                 type: boolean
  *               column_id:
  *                 type: string
+ *               deadline:
+ *                 type: string
+ *                 format: date
+ *               priority:
+ *                 type: string
  *     responses:
  *       200:
  *         description: Task updated successfully
@@ -48,6 +53,8 @@ module.exports = async (req, res) => {
             description: req.body.description !== undefined ? req.body.description : existing.description,
             completed: req.body.completed !== undefined ? req.body.completed : existing.completed,
             column_id: req.body.column_id || existing.column_id,
+            deadline: req.body.deadline !== undefined ? req.body.deadline : existing.deadline,
+            priority: req.body.priority !== undefined ? req.body.priority : existing.priority,
         };
 
         await db.updateTask(req.params.id, updated);

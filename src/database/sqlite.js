@@ -26,6 +26,8 @@ function init() {
                 db.run(queries.initColumnsSqlite, err => { if (err) return rej(err); });
                 db.run(queries.initTasksSqlite, err => {
                     if (err) return rej(err);
+                    db.run(queries.alterTasksAddDeadlineSqlite, () => {});
+                    db.run(queries.alterTasksAddPrioritySqlite, () => {});
                     acc();
                 });
             });
@@ -203,6 +205,8 @@ async function createTask(task) {
                 task.name,
                 task.description || null,
                 task.completed ? 1 : 0,
+                task.deadline || null,
+                task.priority || null,
             ],
             err => {
                 if (err) return rej(err);
@@ -262,7 +266,7 @@ async function updateTask(id, task) {
     return new Promise((acc, rej) => {
         db.run(
             queries.updateTask,
-            [task.name, task.description || null, task.completed ? 1 : 0, task.column_id || null, id],
+            [task.name, task.description || null, task.completed ? 1 : 0, task.column_id || null, task.deadline || null, task.priority || null, id],
             err => {
                 if (err) return rej(err);
                 acc();

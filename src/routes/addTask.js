@@ -7,11 +7,32 @@ const { eventBus, eventTypes } = require('../events');
  * /tasks:
  *   post:
  *     summary: Create a task
- *     operationId: addTask
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               name:
+ *                 type: string
+ *               description:
+ *                 type: string
+ *               completed:
+ *                 type: boolean
+ *               project_id:
+ *                 type: string
+ *               column_id:
+ *                 type: string
+ *               deadline:
+ *                 type: string
+ *                 format: date
+ *               priority:
+ *                 type: string
  */
 module.exports = async (req, res) => {
     try {
-        const { name, description = null, completed = false } = req.body;
+        const { name, description = null, completed = false, deadline = null, priority = null } = req.body;
         const project_id = req.body.project_id || req.params.projectId || null;
         const column_id = req.body.column_id || null;
         const creator_id = req.user ? req.user.id : (req.body.creator_id || null);
@@ -28,6 +49,8 @@ module.exports = async (req, res) => {
             name,
             description,
             completed,
+            deadline,
+            priority,
         };
 
         await db.createTask(task);

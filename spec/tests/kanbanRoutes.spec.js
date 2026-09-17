@@ -241,7 +241,7 @@ describe('Task routes', () => {
     test('it creates a task', async () => {
         uuid.mockReturnValue('task-uuid');
         const req = {
-            body: { name: 'Nouvelle tache', project_id: 'proj-1', column_id: 'col-1' },
+            body: { name: 'Nouvelle tache', project_id: 'proj-1', column_id: 'col-1', deadline: '2026-12-31', priority: 'high' },
             user: { id: 'user-1' },
         };
         const res = { status: jest.fn().mockReturnThis(), send: jest.fn() };
@@ -255,6 +255,8 @@ describe('Task routes', () => {
             name: 'Nouvelle tache',
             description: null,
             completed: false,
+            deadline: '2026-12-31',
+            priority: 'high',
         });
         expect(res.status).toHaveBeenCalledWith(201);
     });
@@ -301,7 +303,7 @@ describe('Task routes', () => {
     test('it updates a task', async () => {
         const req = {
             params: { id: 'task-1' },
-            body: { completed: true },
+            body: { completed: true, deadline: '2026-12-31', priority: 'high' },
         };
         const res = { status: jest.fn().mockReturnThis(), send: jest.fn() };
         db.getTask
@@ -318,6 +320,8 @@ describe('Task routes', () => {
                 description: null,
                 completed: true,
                 column_id: 'col-1',
+                deadline: '2026-12-31',
+                priority: 'high',
             });
 
         await updateTask(req, res);
@@ -326,6 +330,8 @@ describe('Task routes', () => {
             description: null,
             completed: true,
             column_id: 'col-1',
+            deadline: '2026-12-31',
+            priority: 'high',
         });
         expect(res.send).toHaveBeenCalledWith({
             id: 'task-1',
@@ -333,6 +339,8 @@ describe('Task routes', () => {
             description: null,
             completed: true,
             column_id: 'col-1',
+            deadline: '2026-12-31',
+            priority: 'high',
         });
     });
 

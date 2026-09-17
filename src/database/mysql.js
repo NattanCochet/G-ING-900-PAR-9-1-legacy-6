@@ -44,6 +44,9 @@ async function init() {
             err => {
                 if (err) return rej(err);
 
+                pool.query(queries.alterTasksAddDeadlineMysql, () => {});
+                pool.query(queries.alterTasksAddPriorityMysql, () => {});
+
                 console.log(`Connected to mysql db at host ${HOST}`);
                 acc();
             },
@@ -103,6 +106,8 @@ async function createTask(task) {
                 task.name,
                 task.description || null,
                 task.completed ? 1 : 0,
+                task.deadline || null,
+                task.priority || null,
             ],
             err => {
                 if (err) return rej(err);
@@ -116,7 +121,7 @@ async function updateTask(id, task) {
     return new Promise((acc, rej) => {
         pool.query(
             queries.updateTask,
-            [task.name, task.description || null, task.completed ? 1 : 0, task.column_id || null, id],
+            [task.name, task.description || null, task.completed ? 1 : 0, task.column_id || null, task.deadline || null, task.priority || null, id],
             err => {
                 if (err) return rej(err);
                 acc();
