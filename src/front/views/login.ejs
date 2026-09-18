@@ -4,6 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Sign In</title>
+    <link rel="stylesheet" href="/css/theme.css" />
     <link rel="stylesheet" href="/css/auth.css" />
 </head>
 <body>
@@ -12,7 +13,7 @@
             <h1 class="auth-title">Sign in</h1>
             <p class="auth-subtitle">with your account</p>
 
-            <form class="auth-form" action="/login" method="POST" novalidate>
+            <form id="loginForm" class="auth-form" action="/login" method="POST" novalidate>
                 <div class="field">
                     <input type="email" id="email" name="email" placeholder=" " required autocomplete="email" />
                     <label for="email">Email</label>
@@ -24,6 +25,7 @@
                 </div>
 
                 <button type="submit" class="auth-submit">Sign in</button>
+                <p id="errorMsg" style="color:red; display:none;"></p>
             </form>
 
             <p class="auth-footer">
@@ -31,5 +33,35 @@
             </p>
         </div>
     </main>
+    <script>
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const errorMsg = document.getElementById('errorMsg');
+
+            try {
+                const response = await fetch('/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    localStorage.setItem('token', data.token);
+                    localStorage.setItem('user', JSON.stringify(data.user));
+                    window.location.href = '/home';
+                } else {
+                    errorMsg.textContent = data.error || 'Erreur de connexion';
+                    errorMsg.style.display = 'block';
+                }
+            } catch (err) {
+                errorMsg.textContent = 'Erreur réseau';
+                errorMsg.style.display = 'block';
+            }
+        });
+    </script>
 </body>
 </html>

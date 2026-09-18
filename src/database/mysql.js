@@ -1,6 +1,7 @@
 const waitPort = require('wait-port');
 const fs = require('fs');
 const mysql = require('mysql2');
+const queries = require('./queries');
 
 const {
     MYSQL_HOST: HOST,
@@ -39,9 +40,12 @@ async function init() {
 
     return new Promise((acc, rej) => {
         pool.query(
-            'CREATE TABLE IF NOT EXISTS todo_items (id varchar(36), name varchar(255), completed boolean) DEFAULT CHARSET utf8mb4',
+            queries.initTasksMysql,
             err => {
                 if (err) return rej(err);
+
+                pool.query(queries.alterTasksAddDeadlineMysql, () => {});
+                pool.query(queries.alterTasksAddPriorityMysql, () => {});
 
                 console.log(`Connected to mysql db at host ${HOST}`);
                 acc();
@@ -59,14 +63,16 @@ async function teardown() {
     });
 }
 
-async function getItems() {
+async function getTasks(project_id) {
     return new Promise((acc, rej) => {
-        pool.query('SELECT * FROM todo_items', (err, rows) => {
+        const sql = project_id ? queries.getTasksByProject : queries.getAllTasks;
+        const params = project_id ? [project_id] : [];
+        pool.query(sql, params, (err, rows) => {
             if (err) return rej(err);
             acc(
-                rows.map(item =>
-                    Object.assign({}, item, {
-                        completed: item.completed === 1,
+                (rows || []).map(task =>
+                    Object.assign({}, task, {
+                        completed: task.completed === 1,
                     }),
                 ),
             );
@@ -74,26 +80,35 @@ async function getItems() {
     });
 }
 
-async function getItem(id) {
+async function getTask(id) {
     return new Promise((acc, rej) => {
-        pool.query('SELECT * FROM todo_items WHERE id=?', [id], (err, rows) => {
+        pool.query(queries.getTaskById, [id], (err, rows) => {
             if (err) return rej(err);
+            if (!rows || !rows[0]) return acc(undefined);
             acc(
-                rows.map(item =>
-                    Object.assign({}, item, {
-                        completed: item.completed === 1,
-                    }),
-                )[0],
+                Object.assign({}, rows[0], {
+                    completed: rows[0].completed === 1,
+                }),
             );
         });
     });
 }
 
-async function storeItem(item) {
+async function createTask(task) {
     return new Promise((acc, rej) => {
         pool.query(
-            'INSERT INTO todo_items (id, name, completed) VALUES (?, ?, ?)',
-            [item.id, item.name, item.completed ? 1 : 0],
+            queries.createTask,
+            [
+                task.id,
+                task.project_id || null,
+                task.column_id || null,
+                task.creator_id || null,
+                task.name,
+                task.description || null,
+                task.completed ? 1 : 0,
+                task.deadline || null,
+                task.priority || null,
+            ],
             err => {
                 if (err) return rej(err);
                 acc();
@@ -102,11 +117,11 @@ async function storeItem(item) {
     });
 }
 
-async function updateItem(id, item) {
+async function updateTask(id, task) {
     return new Promise((acc, rej) => {
         pool.query(
-            'UPDATE todo_items SET name=?, completed=? WHERE id=?',
-            [item.name, item.completed ? 1 : 0, id],
+            queries.updateTask,
+            [task.name, task.description || null, task.completed ? 1 : 0, task.column_id || null, task.deadline || null, task.priority || null, id],
             err => {
                 if (err) return rej(err);
                 acc();
@@ -115,9 +130,9 @@ async function updateItem(id, item) {
     });
 }
 
-async function removeItem(id) {
+async function deleteTask(id) {
     return new Promise((acc, rej) => {
-        pool.query('DELETE FROM todo_items WHERE id = ?', [id], err => {
+        pool.query(queries.deleteTask, [id], err => {
             if (err) return rej(err);
             acc();
         });
@@ -127,9 +142,9 @@ async function removeItem(id) {
 module.exports = {
     init,
     teardown,
-    getItems,
-    getItem,
-    storeItem,
-    updateItem,
-    removeItem,
+    getTasks,
+    getTask,
+    createTask,
+    updateTask,
+    deleteTask,
 };

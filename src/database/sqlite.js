@@ -1,9 +1,10 @@
 const sqlite3 = require('sqlite3').verbose();
+const queries = require('./queries');
 const fs = require('fs');
 const path = require('path');
 const location = process.env.SQLITE_DB_LOCATION || path.join(__dirname, '..', '..', '.local-data', 'todo.db');
 
-let db, dbAll, dbRun;
+let db;
 
 function init() {
     const dirName = path.dirname(location);
@@ -18,13 +19,18 @@ function init() {
             if (process.env.NODE_ENV !== 'test')
                 console.log(`Using sqlite database at ${location}`);
 
-            db.run(
-                'CREATE TABLE IF NOT EXISTS todo_items (id varchar(36), name varchar(255), completed boolean)',
-                (err, result) => {
+            db.serialize(() => {
+                db.run('PRAGMA foreign_keys = ON;', err => { if (err) return rej(err); });
+                db.run(queries.initUsersSqlite, err => { if (err) return rej(err); });
+                db.run(queries.initProjectsSqlite, err => { if (err) return rej(err); });
+                db.run(queries.initColumnsSqlite, err => { if (err) return rej(err); });
+                db.run(queries.initTasksSqlite, err => {
                     if (err) return rej(err);
+                    db.run(queries.alterTasksAddDeadlineSqlite, () => {});
+                    db.run(queries.alterTasksAddPrioritySqlite, () => {});
                     acc();
-                },
-            );
+                });
+            });
         });
     });
 }
@@ -38,14 +44,188 @@ async function teardown() {
     });
 }
 
-async function getItems() {
+
+async function createUser(user) {
     return new Promise((acc, rej) => {
-        db.all('SELECT * FROM todo_items', (err, rows) => {
+        db.run(
+            queries.createUser,
+            [user.id, user.name, user.email, user.password],
+            err => {
+                if (err) return rej(err);
+                acc();
+            },
+        );
+    });
+}
+
+async function getUserByEmail(email) {
+    return new Promise((acc, rej) => {
+        db.all(queries.getUserByEmail, [email], (err, rows) => {
+            if (err) return rej(err);
+            acc(rows[0]);
+        });
+    });
+}
+
+async function getUserById(id) {
+    return new Promise((acc, rej) => {
+        db.all(queries.getUserById, [id], (err, rows) => {
+            if (err) return rej(err);
+            acc(rows[0]);
+        });
+    });
+}
+
+async function deleteUser(id) {
+    return new Promise((acc, rej) => {
+        db.run(queries.deleteUser, [id], err => {
+            if (err) return rej(err);
+            acc();
+        });
+    });
+}
+
+async function createProject(project) {
+    return new Promise((acc, rej) => {
+        db.run(
+            queries.createProject,
+            [project.id, project.creator_id, project.name, project.description || null],
+            err => {
+                if (err) return rej(err);
+                acc();
+            },
+        );
+    });
+}
+
+async function getProjects(creator_id) {
+    return new Promise((acc, rej) => {
+        const sql = creator_id ? queries.getProjectsByCreator : queries.getAllProjects;
+        const params = creator_id ? [creator_id] : [];
+        db.all(sql, params, (err, rows) => {
+            if (err) return rej(err);
+            acc(rows || []);
+        });
+    });
+}
+
+async function getProject(id) {
+    return new Promise((acc, rej) => {
+        db.all(queries.getProjectById, [id], (err, rows) => {
+            if (err) return rej(err);
+            acc(rows[0]);
+        });
+    });
+}
+
+async function updateProject(id, project) {
+    return new Promise((acc, rej) => {
+        db.run(
+            queries.updateProject,
+            [project.name, project.description || null, id],
+            err => {
+                if (err) return rej(err);
+                acc();
+            },
+        );
+    });
+}
+
+async function deleteProject(id) {
+    return new Promise((acc, rej) => {
+        db.run(queries.deleteProject, [id], err => {
+            if (err) return rej(err);
+            acc();
+        });
+    });
+}
+
+async function createColumn(column) {
+    return new Promise((acc, rej) => {
+        db.run(
+            queries.createColumn,
+            [column.id, column.project_id, column.name, column.description || null],
+            err => {
+                if (err) return rej(err);
+                acc();
+            },
+        );
+    });
+}
+
+async function getColumns(project_id) {
+    return new Promise((acc, rej) => {
+        db.all(queries.getColumnsByProject, [project_id], (err, rows) => {
+            if (err) return rej(err);
+            acc(rows || []);
+        });
+    });
+}
+
+async function getColumn(id) {
+    return new Promise((acc, rej) => {
+        db.all(queries.getColumnById, [id], (err, rows) => {
+            if (err) return rej(err);
+            acc(rows[0]);
+        });
+    });
+}
+
+async function updateColumn(id, column) {
+    return new Promise((acc, rej) => {
+        db.run(
+            queries.updateColumn,
+            [column.name, column.description || null, id],
+            err => {
+                if (err) return rej(err);
+                acc();
+            },
+        );
+    });
+}
+
+async function deleteColumn(id) {
+    return new Promise((acc, rej) => {
+        db.run(queries.deleteColumn, [id], err => {
+            if (err) return rej(err);
+            acc();
+        });
+    });
+}
+
+async function createTask(task) {
+    return new Promise((acc, rej) => {
+        db.run(
+            queries.createTask,
+            [
+                task.id,
+                task.project_id || null,
+                task.column_id || null,
+                task.creator_id || null,
+                task.name,
+                task.description || null,
+                task.completed ? 1 : 0,
+                task.deadline || null,
+                task.priority || null,
+            ],
+            err => {
+                if (err) return rej(err);
+                acc();
+            },
+        );
+    });
+}
+
+async function getTasks(project_id) {
+    return new Promise((acc, rej) => {
+        const sql = project_id ? queries.getTasksByProject : queries.getAllTasks;
+        const params = project_id ? [project_id] : [];
+        db.all(sql, params, (err, rows) => {
             if (err) return rej(err);
             acc(
-                rows.map(item =>
-                    Object.assign({}, item, {
-                        completed: item.completed === 1,
+                (rows || []).map(task =>
+                    Object.assign({}, task, {
+                        completed: task.completed === 1,
                     }),
                 ),
             );
@@ -53,26 +233,40 @@ async function getItems() {
     });
 }
 
-async function getItem(id) {
+async function getTasksByColumn(column_id) {
     return new Promise((acc, rej) => {
-        db.all('SELECT * FROM todo_items WHERE id=?', [id], (err, rows) => {
+        db.all(queries.getTasksByColumn, [column_id], (err, rows) => {
             if (err) return rej(err);
             acc(
-                rows.map(item =>
-                    Object.assign({}, item, {
-                        completed: item.completed === 1,
+                (rows || []).map(task =>
+                    Object.assign({}, task, {
+                        completed: task.completed === 1,
                     }),
-                )[0],
+                ),
             );
         });
     });
 }
 
-async function storeItem(item) {
+async function getTask(id) {
+    return new Promise((acc, rej) => {
+        db.all(queries.getTaskById, [id], (err, rows) => {
+            if (err) return rej(err);
+            if (!rows || !rows[0]) return acc(undefined);
+            acc(
+                Object.assign({}, rows[0], {
+                    completed: rows[0].completed === 1,
+                }),
+            );
+        });
+    });
+}
+
+async function updateTask(id, task) {
     return new Promise((acc, rej) => {
         db.run(
-            'INSERT INTO todo_items (id, name, completed) VALUES (?, ?, ?)',
-            [item.id, item.name, item.completed ? 1 : 0],
+            queries.updateTask,
+            [task.name, task.description || null, task.completed ? 1 : 0, task.column_id || null, task.deadline || null, task.priority || null, id],
             err => {
                 if (err) return rej(err);
                 acc();
@@ -81,22 +275,9 @@ async function storeItem(item) {
     });
 }
 
-async function updateItem(id, item) {
+async function deleteTask(id) {
     return new Promise((acc, rej) => {
-        db.run(
-            'UPDATE todo_items SET name=?, completed=? WHERE id = ?',
-            [item.name, item.completed ? 1 : 0, id],
-            err => {
-                if (err) return rej(err);
-                acc();
-            },
-        );
-    });
-} 
-
-async function removeItem(id) {
-    return new Promise((acc, rej) => {
-        db.run('DELETE FROM todo_items WHERE id = ?', [id], err => {
+        db.run(queries.deleteTask, [id], err => {
             if (err) return rej(err);
             acc();
         });
@@ -107,9 +288,24 @@ module.exports = {
     location,
     init,
     teardown,
-    getItems,
-    getItem,
-    storeItem,
-    updateItem,
-    removeItem,
+    createUser,
+    getUserByEmail,
+    getUserById,
+    deleteUser,
+    createProject,
+    getProjects,
+    getProject,
+    updateProject,
+    deleteProject,
+    createColumn,
+    getColumns,
+    getColumn,
+    updateColumn,
+    deleteColumn,
+    createTask,
+    getTasks,
+    getTasksByColumn,
+    getTask,
+    updateTask,
+    deleteTask,
 };
