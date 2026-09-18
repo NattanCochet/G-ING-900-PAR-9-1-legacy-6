@@ -40,11 +40,15 @@ COPY package.json ./
 COPY src ./src
 
 RUN mkdir -p /data && chown -R node:node /data /app
-USER node
+COPY src/docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
+# stays root here: entrypoint chowns the runtime-mounted volume (which
+# overrides this build-time chown) before dropping privileges to `node`
 EXPOSE 3000
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
     CMD node -e "require('http').get('http://127.0.0.1:'+(process.env.PORT||3000)+'/healthz', r => process.exit(r.statusCode===200?0:1)).on('error', () => process.exit(1))"
 
+ENTRYPOINT ["docker-entrypoint.sh"]
 CMD ["node", "src/index.js"]
