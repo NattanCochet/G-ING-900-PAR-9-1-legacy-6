@@ -1,18 +1,27 @@
 const db = require('../../src/database');
-const addProject = require('../../src/routes/addProject');
-const { getProjects, getProjectById } = require('../../src/routes/getProjects');
-const updateProject = require('../../src/routes/updateProject');
-const deleteProject = require('../../src/routes/deleteProject');
+const {
+    addProject,
+    getProjects,
+    getProjectById,
+    updateProject,
+    deleteProject,
+} = require('../../src/routes/projects');
 
-const addColumn = require('../../src/routes/addColumn');
-const { getColumns, getColumnById } = require('../../src/routes/getColumns');
-const updateColumn = require('../../src/routes/updateColumn');
-const deleteColumn = require('../../src/routes/deleteColumn');
+const {
+    addColumn,
+    getColumns,
+    getColumnById,
+    updateColumn,
+    deleteColumn,
+} = require('../../src/routes/columns');
 
-const addTask = require('../../src/routes/addTask');
-const { getTasks, getTaskById } = require('../../src/routes/getTasks');
-const updateTask = require('../../src/routes/updateTask');
-const deleteTask = require('../../src/routes/deleteTask');
+const {
+    addTask,
+    getTasks,
+    getTaskById,
+    updateTask,
+    deleteTask,
+} = require('../../src/routes/tasks');
 
 const { v4: uuid } = require('uuid');
 
