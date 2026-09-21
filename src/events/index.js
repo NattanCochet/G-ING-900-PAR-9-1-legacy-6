@@ -4,7 +4,9 @@ const registerAuditLogger = require('./listeners/auditLogger');
 const registerMailNotifier = require('./listeners/mailNotifier');
 
 // Register every listener here; new consumers (websocket push, notifications, ...) plug in the same way.
-registerAuditLogger();
-registerMailNotifier();
+if (process.env.NODE_ENV !== 'test') {
+    registerAuditLogger();
+    registerMailNotifier();
+}
 
 module.exports = { eventBus, eventTypes };
