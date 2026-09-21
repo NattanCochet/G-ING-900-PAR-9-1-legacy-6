@@ -11,6 +11,12 @@ const openapiSpec = swaggerJsdoc({
     definition: {
         openapi: '3.1.0',
         info: { title: 'Legacy Project API', version: '0.1' },
+        tags: [
+            { name: 'Auth', description: 'Signup, login and user management' },
+            { name: 'Projects', description: 'Project management' },
+            { name: 'Columns', description: 'Kanban columns within a project' },
+            { name: 'Tasks', description: 'Tasks within a project/column' },
+        ],
     },
     apis: [__dirname + '/routes/*.js'],
 });

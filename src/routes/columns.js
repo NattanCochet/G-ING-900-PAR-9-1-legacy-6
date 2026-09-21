@@ -10,6 +10,7 @@ const { eventBus, eventTypes } = require('../events');
  *   post:
  *     summary: Create a column in a project
  *     operationId: addColumn
+ *     tags: [Columns]
  */
 const addColumn = async (req, res) => {
     try {
@@ -44,6 +45,7 @@ const addColumn = async (req, res) => {
  *   get:
  *     summary: Get all columns for a project (using query param)
  *     operationId: getColumnsQuery
+ *     tags: [Columns]
  *     parameters:
  *       - name: project_id
  *         in: query
@@ -61,6 +63,7 @@ const addColumn = async (req, res) => {
  *   get:
  *     summary: Get all columns for a project
  *     operationId: getColumns
+ *     tags: [Columns]
  *     parameters:
  *       - name: projectId
  *         in: path
@@ -92,6 +95,7 @@ const getColumns = async (req, res) => {
  *   get:
  *     summary: Get a column by ID
  *     operationId: getColumnById
+ *     tags: [Columns]
  *     parameters:
  *       - name: id
  *         in: path
@@ -124,6 +128,7 @@ const getColumnById = async (req, res) => {
  *   put:
  *     summary: Update a column
  *     operationId: updateColumn
+ *     tags: [Columns]
  *     parameters:
  *       - name: id
  *         in: path
@@ -176,6 +181,7 @@ const updateColumn = async (req, res) => {
  *   delete:
  *     summary: Delete a column
  *     operationId: deleteColumn
+ *     tags: [Columns]
  *     parameters:
  *       - name: id
  *         in: path

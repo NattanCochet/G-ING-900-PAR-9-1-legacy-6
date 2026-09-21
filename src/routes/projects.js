@@ -12,6 +12,7 @@ const taskRouter = require('./tasks');
  *   post:
  *     summary: Create a new project
  *     operationId: addProject
+ *     tags: [Projects]
  *     requestBody:
  *       required: true
  *       content:
@@ -61,6 +62,7 @@ const addProject = async (req, res) => {
  *   get:
  *     summary: Get all projects (or current user projects)
  *     operationId: getProjects
+ *     tags: [Projects]
  */
 const getProjects = async (req, res) => {
     try {
@@ -78,6 +80,7 @@ const getProjects = async (req, res) => {
  *   get:
  *     summary: Get a project by ID
  *     operationId: getProjectById
+ *     tags: [Projects]
  *     parameters:
  *       - name: id
  *         in: path
@@ -110,6 +113,7 @@ const getProjectById = async (req, res) => {
  *   put:
  *     summary: Update a project
  *     operationId: updateProject
+ *     tags: [Projects]
  */
 const updateProject = async (req, res) => {
     try {
@@ -138,6 +142,7 @@ const updateProject = async (req, res) => {
  *   delete:
  *     summary: Delete a project
  *     operationId: deleteProject
+ *     tags: [Projects]
  */
 const deleteProject = async (req, res) => {
     try {

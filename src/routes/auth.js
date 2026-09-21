@@ -12,6 +12,7 @@ const { eventBus, eventTypes } = require('../events');
  *   post:
  *     summary: Register a new user
  *     operationId: signup
+ *     tags: [Auth]
  *     requestBody:
  *       required: true
  *       content:
@@ -97,6 +98,7 @@ const signup = async (req, res, next) => {
  *   post:
  *     summary: Login a user
  *     operationId: login
+ *     tags: [Auth]
  *     requestBody:
  *       required: true
  *       content:
@@ -177,6 +179,7 @@ const login = async (req, res, next) => {
  *   delete:
  *     summary: Delete a user
  *     operationId: deleteUser
+ *     tags: [Auth]
  *     parameters:
  *       - name: id
  *         in: path

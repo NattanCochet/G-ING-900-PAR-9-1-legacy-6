@@ -9,6 +9,7 @@ const { eventBus, eventTypes } = require('../events');
  * /tasks:
  *   post:
  *     summary: Create a task
+ *     tags: [Tasks]
  *     requestBody:
  *       required: false
  *       content:
@@ -69,6 +70,7 @@ const addTask = async (req, res) => {
  *   get:
  *     summary: Get tasks (optionally by column_id or project_id)
  *     operationId: getTasksQuery
+ *     tags: [Tasks]
  *     parameters:
  *       - name: project_id
  *         in: query
@@ -89,6 +91,7 @@ const addTask = async (req, res) => {
  *   get:
  *     summary: Get tasks for a project
  *     operationId: getTasks
+ *     tags: [Tasks]
  *     parameters:
  *       - name: projectId
  *         in: path
@@ -124,6 +127,7 @@ const getTasks = async (req, res) => {
  *   get:
  *     summary: Get a task by ID
  *     operationId: getTaskById
+ *     tags: [Tasks]
  *     parameters:
  *       - name: id
  *         in: path
@@ -156,6 +160,7 @@ const getTaskById = async (req, res) => {
  *   put:
  *     summary: Update a task
  *     operationId: updateTask
+ *     tags: [Tasks]
  *     parameters:
  *       - name: id
  *         in: path
@@ -221,6 +226,7 @@ const updateTask = async (req, res) => {
  *   delete:
  *     summary: Delete a task
  *     operationId: deleteTask
+ *     tags: [Tasks]
  *     parameters:
  *       - name: id
  *         in: path
