@@ -11,27 +11,20 @@ const openapiSpec = swaggerJsdoc({
     definition: {
         openapi: '3.1.0',
         info: { title: 'Legacy Project API', version: '0.1' },
+        tags: [
+            { name: 'Auth', description: 'Signup, login and user management' },
+            { name: 'Projects', description: 'Project management' },
+            { name: 'Columns', description: 'Kanban columns within a project' },
+            { name: 'Tasks', description: 'Tasks within a project/column' },
+        ],
     },
     apis: [__dirname + '/routes/*.js'],
 });
-const signup = require('./routes/signup');
-const login = require('./routes/login');
-const deleteUser = require('./routes/deleteUser');
 
-const addProject = require('./routes/addProject');
-const { getProjects, getProjectById } = require('./routes/getProjects');
-const updateProject = require('./routes/updateProject');
-const deleteProject = require('./routes/deleteProject');
-
-const addColumn = require('./routes/addColumn');
-const { getColumns, getColumnById } = require('./routes/getColumns');
-const updateColumn = require('./routes/updateColumn');
-const deleteColumn = require('./routes/deleteColumn');
-
-const addTask = require('./routes/addTask');
-const { getTasks, getTaskById } = require('./routes/getTasks');
-const updateTask = require('./routes/updateTask');
-const deleteTask = require('./routes/deleteTask');
+const authRoutes = require('./routes/auth');
+const projectRoutes = require('./routes/projects');
+const columnRoutes = require('./routes/columns');
+const taskRoutes = require('./routes/tasks');
 
 app.use(express.json());
 app.set('view engine', 'ejs');
@@ -46,33 +39,10 @@ app.get('/login', (req, res) => res.render('login'));
 app.get('/home', (req, res) => res.render('home'));
 app.get('/register', (req, res) => res.render('register'));
 
-app.post('/register', signup);
-app.post('/signup', signup);
-app.post('/login', login);
-app.delete('/users/:id', auth, deleteUser);
-
-
-app.get('/projects', auth, getProjects);
-app.post('/projects', auth, addProject);
-app.get('/projects/:id', auth, getProjectById);
-app.put('/projects/:id', auth, updateProject);
-app.delete('/projects/:id', auth, deleteProject);
-
-app.get('/projects/:projectId/columns', auth, getColumns);
-app.post('/projects/:projectId/columns', auth, addColumn);
-app.get('/columns', auth, getColumns);
-app.post('/columns', auth, addColumn);
-app.get('/columns/:id', auth, getColumnById);
-app.put('/columns/:id', auth, updateColumn);
-app.delete('/columns/:id', auth, deleteColumn);
-
-app.get('/projects/:projectId/tasks', auth, getTasks);
-app.post('/projects/:projectId/tasks', auth, addTask);
-app.get('/tasks', auth, getTasks);
-app.post('/tasks', auth, addTask);
-app.get('/tasks/:id', auth, getTaskById);
-app.put('/tasks/:id', auth, updateTask);
-app.delete('/tasks/:id', auth, deleteTask);
+app.use('/', authRoutes);
+app.use('/projects', auth, projectRoutes);
+app.use('/columns', auth, columnRoutes);
+app.use('/tasks', auth, taskRoutes);
 
 app.get('/openapi.json', (req, res) => res.send(openapiSpec));
 app.use('/reference', apiReference({ url: '/openapi.json' }));

@@ -1,7 +1,7 @@
 const db = require('../../src/database');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const login = require('../../src/routes/login');
+const { login } = require('../../src/routes/auth');
 
 jest.mock('../../src/database', () => ({
     getUserByEmail: jest.fn(),

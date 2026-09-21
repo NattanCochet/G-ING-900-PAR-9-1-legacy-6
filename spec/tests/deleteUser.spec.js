@@ -1,5 +1,5 @@
 const db = require('../../src/database');
-const deleteUser = require('../../src/routes/deleteUser');
+const { deleteUser } = require('../../src/routes/auth');
 const USER = { id: '39239e74-7e5c-42b7-a1f7-cf5c2f150296' };
 
 jest.mock('../../src/database', () => ({
