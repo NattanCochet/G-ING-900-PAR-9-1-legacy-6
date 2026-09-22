@@ -1,21 +1,19 @@
-# Local development: hot-reload container built from the `dev` Dockerfile stage.
-# For a production-like run, use docker-compose.prod.yml instead.
+# Production-like local run, mirrors what Railway builds/runs from src/Dockerfile.
+# Usage: docker compose -f docker-compose.prod.yml up --build
 services:
   app:
     build:
       context: .
       dockerfile: src/Dockerfile
-      target: dev
+      target: prod
     ports:
       - "${PORT:-3000}:3000"
     env_file:
       - .env
     environment:
-      NODE_ENV: development
+      NODE_ENV: production
       SQLITE_DB_LOCATION: /data/todo.db
     volumes:
-      - .:/app
-      - /app/node_modules
       - todo-data:/data
     healthcheck:
       test: ["CMD", "node", "-e", "require('http').get('http://127.0.0.1:3000/healthz', r => process.exit(r.statusCode===200?0:1)).on('error', () => process.exit(1))"]
