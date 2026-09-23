@@ -1,10 +1,30 @@
+require('dotenv').config();
 const express = require('express');
 const app = express();
 const db = require('./database');
-const getItems = require('./routes/getItems');
-const addItem = require('./routes/addItem');
-const updateItem = require('./routes/updateItem');
-const deleteItem = require('./routes/deleteItem');
+const auth = require('./middleware/auth');
+require('./events'); // registers domain-event listeners (audit log, ...)
+const { apiReference } = require('@scalar/express-api-reference');
+const swaggerJsdoc = require('swagger-jsdoc');
+
+const openapiSpec = swaggerJsdoc({
+    definition: {
+        openapi: '3.1.0',
+        info: { title: 'Legacy Project API', version: '0.1' },
+        tags: [
+            { name: 'Auth', description: 'Signup, login and user management' },
+            { name: 'Projects', description: 'Project management' },
+            { name: 'Columns', description: 'Kanban columns within a project' },
+            { name: 'Tasks', description: 'Tasks within a project/column' },
+        ],
+    },
+    apis: [__dirname + '/routes/*.js'],
+});
+
+const authRoutes = require('./routes/auth');
+const projectRoutes = require('./routes/projects');
+const columnRoutes = require('./routes/columns');
+const taskRoutes = require('./routes/tasks');
 
 app.use(express.json());
 app.set('view engine', 'ejs');
@@ -15,14 +35,19 @@ app.get('/', (req, res) => {
     res.redirect('/login');
 });
 
+app.get('/healthz', (req, res) => res.status(200).json({ status: 'ok' }));
+
 app.get('/login', (req, res) => res.render('login'));
-app.get('/home', (req, res) => res.render('index'));
+app.get('/home', (req, res) => res.render('home'));
 app.get('/register', (req, res) => res.render('register'));
 
-app.get('/items', getItems);
-app.post('/items', addItem);
-app.put('/items/:id', updateItem);
-app.delete('/items/:id', deleteItem);
+app.use('/', authRoutes);
+app.use('/projects', auth, projectRoutes);
+app.use('/columns', auth, columnRoutes);
+app.use('/tasks', auth, taskRoutes);
+
+app.get('/openapi.json', (req, res) => res.send(openapiSpec));
+app.use('/reference', apiReference({ url: '/openapi.json' }));
 
 db.init().then(() => {
     app.listen(process.env.PORT || 3000, () => console.log(`Listening on port ${process.env.PORT || 3000}`));
@@ -33,10 +58,10 @@ db.init().then(() => {
 
 const gracefulShutdown = () => {
     db.teardown()
-        .catch(() => {})
+        .catch(() => { })
         .then(() => process.exit());
 };
 
 process.on('SIGINT', gracefulShutdown);
 process.on('SIGTERM', gracefulShutdown);
-process.on('SIGUSR2', gracefulShutdown); // Sent by nodemon
+process.on('SIGUSR2', gracefulShutdown);
