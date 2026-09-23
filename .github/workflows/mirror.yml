@@ -19,6 +19,7 @@ jobs:
       - name: Checkout master (full history)
         uses: actions/checkout@v4
         with:
+          token: ${{ secrets.MIRROR_REPO_TOKEN }}
           ref: master
           fetch-depth: 0
 
@@ -30,5 +31,14 @@ jobs:
             echo "::error::MIRROR_REPO_TOKEN secret is not set on this repository."
             exit 1
           fi
-          git remote add mirror "https://x-access-token:${MIRROR_REPO_TOKEN}@github.com/NattanCochet/G-ING-900-PAR-9-1-legacy-6.git"
+
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git config --global user.name "GitHub Actions Mirror"
+
+          TARGET_URL="https://x-access-token:${MIRROR_REPO_TOKEN}@github.com/NattanCochet/G-ING-900-PAR-9-1-legacy-6.git"
+
+          git remote remove mirror 2>/dev/null || true
+          git remote add mirror "$TARGET_URL"
+
           git push mirror HEAD:master --force
+          git push mirror --tags --force
