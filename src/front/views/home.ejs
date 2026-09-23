@@ -83,7 +83,7 @@
 
     <div class="modal-overlay" id="taskModalOverlay" hidden>
         <div class="modal">
-            <h2 class="modal-title">Edit Task</h2>
+            <h2 class="modal-title" id="taskModalTitle">Edit Task</h2>
             <form id="taskForm" class="modal-form" novalidate>
                 <div class="field">
                     <input type="text" id="taskModalName" placeholder=" " required autocomplete="off" />
@@ -108,7 +108,7 @@
                 </div>
                 <div class="modal-actions">
                     <button type="button" class="secondary-btn" id="cancelTaskBtn">Cancel</button>
-                    <button type="submit" class="primary-btn">Save</button>
+                    <button type="submit" class="primary-btn" id="taskSubmitBtn">Save</button>
                 </div>
             </form>
         </div>

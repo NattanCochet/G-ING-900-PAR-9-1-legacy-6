@@ -195,13 +195,6 @@
     const renderBoard = () => {
         boardEl.innerHTML = '';
 
-        if (columns.length === 0) {
-            const empty = document.createElement('p');
-            empty.className = 'board-empty';
-            empty.textContent = 'No columns yet — add one to start organizing tasks.';
-            boardEl.appendChild(empty);
-        }
-
         columns.forEach((column) => {
             boardEl.appendChild(renderColumn(column));
         });
@@ -260,30 +253,7 @@
         });
 
         const addTaskBtn = el.querySelector('.add-task-btn');
-        addTaskBtn.addEventListener('click', () => {
-            const form = document.createElement('form');
-            form.className = 'add-task-form';
-            form.innerHTML = `<input type="text" placeholder="Task name" autocomplete="off" />`;
-            addTaskBtn.replaceWith(form);
-            const input = form.querySelector('input');
-            input.focus();
-
-            const cancel = () => {
-                form.replaceWith(addTaskBtn);
-            };
-
-            form.addEventListener('submit', async (e) => {
-                e.preventDefault();
-                const name = input.value.trim();
-                if (!name) return cancel();
-                await createTask(column, name);
-                showToast('Task added', 'success');
-            });
-
-            input.addEventListener('blur', () => {
-                setTimeout(cancel, 100);
-            });
-        });
+        addTaskBtn.addEventListener('click', () => openTaskModal(null, column));
 
         return el;
     };
@@ -417,11 +387,18 @@
         await loadBoard();
     };
 
-    const createTask = async (column, name) => {
+    const createTask = async (column, { name, description, priority, deadline }) => {
         await fetchWithAuth('/tasks', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ name, project_id: currentProject.id, column_id: column.id }),
+            body: JSON.stringify({
+                name,
+                description,
+                priority,
+                deadline,
+                project_id: currentProject.id,
+                column_id: column.id,
+            }),
         });
         await loadBoard();
     };
@@ -521,6 +498,8 @@
     // --- Task modal ---
 
     const taskModalOverlay = document.getElementById('taskModalOverlay');
+    const taskModalTitle = document.getElementById('taskModalTitle');
+    const taskSubmitBtn = document.getElementById('taskSubmitBtn');
     const taskForm = document.getElementById('taskForm');
     const taskModalNameInput = document.getElementById('taskModalName');
     const taskModalDescriptionInput = document.getElementById('taskModalDescription');
@@ -528,14 +507,26 @@
     const taskModalPriorityInput = document.getElementById('taskModalPriority');
 
     let editingTask = null;
+    let targetColumn = null;
 
-    const openTaskModal = (task) => {
+    const openTaskModal = (task = null, column = null) => {
         editingTask = task;
+        targetColumn = column;
         taskForm.reset();
-        taskModalNameInput.value = task.name;
-        taskModalDescriptionInput.value = task.description || '';
-        taskModalDeadlineInput.value = task.deadline || '';
-        taskModalPriorityInput.value = task.priority || 'none';
+
+        if (task) {
+            taskModalTitle.textContent = 'Edit Task';
+            taskSubmitBtn.textContent = 'Save';
+            taskModalNameInput.value = task.name;
+            taskModalDescriptionInput.value = task.description || '';
+            taskModalDeadlineInput.value = task.deadline || '';
+            taskModalPriorityInput.value = task.priority || 'none';
+        } else {
+            taskModalTitle.textContent = 'New Task';
+            taskSubmitBtn.textContent = 'Create';
+            taskModalPriorityInput.value = 'none';
+        }
+
         taskModalOverlay.hidden = false;
         taskModalNameInput.focus();
     };
@@ -543,6 +534,7 @@
     const closeTaskModal = () => {
         taskModalOverlay.hidden = true;
         editingTask = null;
+        targetColumn = null;
     };
 
     document.getElementById('cancelTaskBtn').addEventListener('click', closeTaskModal);
@@ -556,10 +548,18 @@
         const description = taskModalDescriptionInput.value.trim();
         const deadline = taskModalDeadlineInput.value;
         const priority = taskModalPriorityInput.value;
-        if (!name || !editingTask) return;
+        if (!name) return;
 
-        await updateTask(editingTask, { name, description: description || null, deadline: deadline || null, priority });
-        showToast('Task updated', 'success');
+        if (editingTask) {
+            await updateTask(editingTask, { name, description: description || null, deadline: deadline || null, priority });
+            showToast('Task updated', 'success');
+        } else if (targetColumn) {
+            await createTask(targetColumn, { name, description: description || null, deadline: deadline || null, priority });
+            showToast('Task added', 'success');
+        } else {
+            return;
+        }
+
         closeTaskModal();
     });
 
