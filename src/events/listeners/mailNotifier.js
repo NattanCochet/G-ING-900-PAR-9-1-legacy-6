@@ -2,15 +2,47 @@ const nodemailer = require('nodemailer');
 const eventBus = require('../eventBus');
 const eventTypes = require('../eventTypes');
 
+// Mailgun's SMTP host address is a domain-suffixed username (e.g. "user@sandbox123.mailgun.org").
+function mailgunDomainFromSmtpUser() {
+    return process.env.SMTP_USER && process.env.SMTP_USER.includes('@')
+        ? process.env.SMTP_USER.split('@')[1]
+        : undefined;
+}
+
+// Sends through Mailgun's HTTPS API instead of SMTP, since many hosts (e.g. Railway) block outbound SMTP ports.
+async function sendViaMailgunApi({ to, subject, text, html }) {
+    const domain = process.env.MAILGUN_DOMAIN || mailgunDomainFromSmtpUser();
+    const auth = Buffer.from(`api:${process.env.MAILGUN_API_KEY}`).toString('base64');
+    const body = new URLSearchParams({ from: process.env.SMTP_FROM, to, subject, text, html });
+
+    const response = await fetch(`https://api.mailgun.net/v3/${domain}/messages`, {
+        method: 'POST',
+        headers: {
+            Authorization: `Basic ${auth}`,
+            'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body,
+    });
+
+    if (!response.ok) {
+        throw new Error(`Mailgun API responded with ${response.status}: ${await response.text()}`);
+    }
+
+    return response.json();
+}
+
 /**
  * Configures an Ethereal test account and subscribes to events to send emails.
  */
 async function registerMailNotifier() {
     try {
-        let smtpConfig;
+        const useMailgunApi = Boolean(process.env.MAILGUN_API_KEY);
+        let transporter;
 
-        if (process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS) {
-            smtpConfig = {
+        if (useMailgunApi) {
+            console.log('[mailNotifier] Using Mailgun HTTP API (bypasses SMTP, which many hosts block outbound).');
+        } else if (process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS) {
+            const smtpConfig = {
                 host: process.env.SMTP_HOST,
                 port: process.env.SMTP_PORT || 587,
                 secure: process.env.SMTP_PORT === '465',
@@ -19,10 +51,11 @@ async function registerMailNotifier() {
                     pass: process.env.SMTP_PASS,
                 },
             };
+            transporter = nodemailer.createTransport(smtpConfig);
             console.log('[mailNotifier] Using production SMTP configuration.');
         } else {
             const testAccount = await nodemailer.createTestAccount();
-            smtpConfig = {
+            const smtpConfig = {
                 host: 'smtp.ethereal.email',
                 port: 587,
                 secure: false,
@@ -31,10 +64,9 @@ async function registerMailNotifier() {
                     pass: testAccount.pass,
                 },
             };
+            transporter = nodemailer.createTransport(smtpConfig);
             console.log('[mailNotifier] Using Ethereal email transporter (Development mode).');
         }
-
-        const transporter = nodemailer.createTransport(smtpConfig);
 
         eventBus.on(eventTypes.USER_CREATED, async (payload) => {
             const { id, name, email } = payload;
@@ -44,13 +76,12 @@ async function registerMailNotifier() {
                 return;
             }
 
-            try {
-                const info = await transporter.sendMail({
-                    from: process.env.SMTP_FROM,
-                    to: email,
-                    subject: 'Welcome to Legacy! 🚀',
-                    text: `Hello ${name || 'New User'},\n\nWelcome to Legacy! 🚀\n\nYour account has been successfully created.\nAccount ID: ${id}\nEmail: ${email}\n\nBest regards,\nThe Legacy Team`,
-                    html: `
+            const mail = {
+                from: process.env.SMTP_FROM,
+                to: email,
+                subject: 'Welcome to Legacy! 🚀',
+                text: `Hello ${name || 'New User'},\n\nWelcome to Legacy! 🚀\n\nYour account has been successfully created.\nAccount ID: ${id}\nEmail: ${email}\n\nBest regards,\nThe Legacy Team`,
+                html: `
 <div style="font-family: Arial, sans-serif; color: #2d3748; line-height: 1.6; max-width: 580px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 8px; padding: 24px;">
     <h2 style="color: #4a5568; margin-top: 0;">Welcome to Legacy! 🚀</h2>
     <p>Hello <strong>${name || 'New User'}</strong>,</p>
@@ -63,10 +94,13 @@ async function registerMailNotifier() {
     <p style="margin-top: 24px; color: #718096; font-size: 14px;">Best regards,<br><strong>The Legacy Team</strong></p>
 </div>
                     `,
-                });
+            };
 
-                console.log(`[mailNotifier] Welcome email sent to ${email}. MessageId: ${info.messageId}`);
-                if (!process.env.SMTP_HOST) {
+            try {
+                const info = useMailgunApi ? await sendViaMailgunApi(mail) : await transporter.sendMail(mail);
+
+                console.log(`[mailNotifier] Welcome email sent to ${email}. MessageId: ${info.messageId || info.id}`);
+                if (!useMailgunApi && !process.env.SMTP_HOST) {
                     console.log(`[mailNotifier] Preview URL: ${nodemailer.getTestMessageUrl(info)}`);
                 }
             } catch (error) {
