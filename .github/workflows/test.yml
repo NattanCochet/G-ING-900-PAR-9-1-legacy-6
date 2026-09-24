@@ -35,3 +35,33 @@ jobs:
           publish_dir: ./reports
           destination_dir: ${{ github.ref_name }}
           keep_files: true
+
+      - name: Checkout gh-pages branch
+        if: always() && github.event_name == 'push'
+        uses: actions/checkout@v4
+        with:
+          ref: gh-pages
+          path: gh-pages-checkout
+
+      - name: Build report index page
+        if: always() && github.event_name == 'push'
+        run: |
+          mkdir -p landing
+          {
+            echo '<!DOCTYPE html><html><head><meta charset="utf-8"><title>Test Reports</title></head><body>'
+            echo '<h1>Test Reports</h1><ul>'
+            find gh-pages-checkout -mindepth 2 -name index.html -not -path '*/jest-html-reporters-attach/*' | sort | while read -r f; do
+              rel="${f#gh-pages-checkout/}"
+              rel="${rel%/index.html}"
+              echo "<li><a href=\"$rel/\">$rel</a></li>"
+            done
+            echo '</ul></body></html>'
+          } > landing/index.html
+
+      - name: Publish report index page
+        if: always() && github.event_name == 'push'
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./landing
+          keep_files: true
