@@ -4,6 +4,9 @@ on:
   push:
   pull_request:
 
+permissions:
+  contents: write
+
 jobs:
   test:
     runs-on: self-hosted
@@ -23,3 +26,12 @@ jobs:
         run: npm test
         env:
           SQLITE_DB_LOCATION: ${{ runner.temp }}/todo.db
+
+      - name: Deploy test report to GitHub Pages
+        if: always() && github.event_name == 'push'
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./reports
+          destination_dir: ${{ github.ref_name }}
+          keep_files: true
