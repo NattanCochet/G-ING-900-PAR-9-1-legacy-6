@@ -3,7 +3,7 @@ const globals = require('globals');
 
 module.exports = [
     {
-        ignores: ['src/front/static/**'],
+        ignores: ['src/front/static/**', 'reports/**'],
     },
     eslint.configs.recommended,
     {
