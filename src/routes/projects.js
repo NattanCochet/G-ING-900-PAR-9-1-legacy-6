@@ -154,6 +154,88 @@ const deleteProject = async (req, res) => {
     }
 };
 
+/**
+ * @openapi
+ * /projects/{id}/invite:
+ *   post:
+ *     summary: Invite a user to a project by email
+ *     operationId: inviteUserToProject
+ *     tags: [Projects]
+ *     parameters:
+ *       - name: id
+ *         in: path
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               email:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: User invited successfully
+ *       404:
+ *         description: Project or User not found
+ *       500:
+ *         description: Internal server error
+ */
+const inviteUser = async (req, res) => {
+    try {
+        const { email } = req.body;
+        if (!email) {
+            return res.status(400).send({ error: 'email is required' });
+        }
+
+        const project = await db.getProject(req.params.id);
+        if (!project) {
+            return res.status(404).send({ error: 'Project not found' });
+        }
+
+        const user = await db.getUserByEmail(email);
+        if (!user) {
+            return res.status(404).send({ error: 'User not found' });
+        }
+
+        await db.assignUserToProject(project.id, user.id);
+        res.status(200).send({ message: 'User invited successfully', user: { id: user.id, name: user.name, email: user.email } });
+    } catch (err) {
+        res.status(500).send({ error: err.message });
+    }
+};
+
+/**
+ * @openapi
+ * /projects/{id}/users:
+ *   get:
+ *     summary: Get users assigned to a project
+ *     operationId: getProjectUsers
+ *     tags: [Projects]
+ *     parameters:
+ *       - name: id
+ *         in: path
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Successful response
+ *       500:
+ *         description: Internal server error
+ */
+const getProjectUsers = async (req, res) => {
+    try {
+        const users = await db.getProjectUsers(req.params.id);
+        res.send(users);
+    } catch (err) {
+        res.status(500).send({ error: err.message });
+    }
+};
+
 router.use('/:projectId/columns', columnRouter);
 router.use('/:projectId/tasks', taskRouter);
 
@@ -163,9 +245,14 @@ router.get('/:id', getProjectById);
 router.put('/:id', updateProject);
 router.delete('/:id', deleteProject);
 
+router.post('/:id/invite', inviteUser);
+router.get('/:id/users', getProjectUsers);
+
 module.exports = router;
 module.exports.addProject = addProject;
 module.exports.getProjects = getProjects;
 module.exports.getProjectById = getProjectById;
 module.exports.updateProject = updateProject;
 module.exports.deleteProject = deleteProject;
+module.exports.inviteUser = inviteUser;
+module.exports.getProjectUsers = getProjectUsers;
