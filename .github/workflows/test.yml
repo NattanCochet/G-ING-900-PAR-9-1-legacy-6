@@ -1,18 +1,22 @@
 name: Tests
 
 on:
-  push:
-  pull_request:
+  workflow_run:
+    workflows: ["Lint"]
+    types: [completed]
 
 permissions:
   contents: write
 
 jobs:
   test:
+    if: github.event.workflow_run.conclusion == 'success' && github.repository == 'EpitechPGE45-2026/G-ING-900-PAR-9-1-legacy-6'
     runs-on: self-hosted
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
 
       - uses: actions/setup-node@v4
         with:
@@ -28,23 +32,23 @@ jobs:
           SQLITE_DB_LOCATION: ${{ runner.temp }}/todo.db
 
       - name: Deploy test report to GitHub Pages
-        if: always() && github.event_name == 'push'
+        if: always() && github.event.workflow_run.event == 'push'
         uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./reports
-          destination_dir: ${{ github.ref_name }}
+          destination_dir: ${{ github.event.workflow_run.head_branch }}
           keep_files: true
 
       - name: Checkout gh-pages branch
-        if: always() && github.event_name == 'push'
+        if: always() && github.event.workflow_run.event == 'push'
         uses: actions/checkout@v4
         with:
           ref: gh-pages
           path: gh-pages-checkout
 
       - name: Build report index page
-        if: always() && github.event_name == 'push'
+        if: always() && github.event.workflow_run.event == 'push'
         run: |
           mkdir -p landing
           {
@@ -59,7 +63,7 @@ jobs:
           } > landing/index.html
 
       - name: Publish report index page
-        if: always() && github.event_name == 'push'
+        if: always() && github.event.workflow_run.event == 'push'
         uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}

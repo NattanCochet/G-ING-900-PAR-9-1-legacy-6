@@ -1,21 +1,26 @@
 name: Publish Docker Image
 
 on:
-  push:
+  workflow_run:
+    workflows: ["Tests"]
+    types: [completed]
     branches:
-      - dev
+      - master
 
 env:
   IMAGE_NAME: pilebunker/legacy-app
 
 jobs:
   publish:
+    if: github.event.workflow_run.conclusion == 'success' && github.repository == 'EpitechPGE45-2026/G-ING-900-PAR-9-1-legacy-6'
     runs-on: self-hosted
     permissions:
       contents: read
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
 
       - name: Log in to Docker Hub
         uses: docker/login-action@v3

@@ -1,7 +1,9 @@
 name: Mirror master to personal repo
 
 on:
-  push:
+  workflow_run:
+    workflows: ["Publish Docker Image"]
+    types: [completed]
     branches:
       - master
 
@@ -14,6 +16,7 @@ concurrency:
 
 jobs:
   mirror:
+    if: github.event.workflow_run.conclusion == 'success' && github.repository == 'EpitechPGE45-2026/G-ING-900-PAR-9-1-legacy-6'
     runs-on: self-hosted
     steps:
       - name: Checkout master (full history)
