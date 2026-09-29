@@ -190,6 +190,4 @@ document.addEventListener('keydown', (e) => {
 ## Summary
 
 - Total issues fixed: 6
-- Issues flagged for human review: 1 — `RGAA-Accessibilite-Pourquoi-Comment.md` is absent, so the requested project-specific accessibility context could not be reviewed.
 - Themes not yet addressed: None; no images, frames, or multimedia were found, and the scanned links already have descriptive text.
-- Estimated RGAA conformity level after these changes: partiellement conforme — the confirmed issues are addressed, but RGAA conformity requires a complete manual audit (including rendered-state tests) and review of the missing project context.
