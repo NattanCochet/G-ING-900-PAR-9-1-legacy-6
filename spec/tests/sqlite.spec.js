@@ -207,3 +207,32 @@ test('it can assign a user to a task and retrieve task users', async () => {
     expect(users[0].name).toBe(USER.name);
     expect(users[0].email).toBe(USER.email);
 });
+
+test('it can assign a user to a project and retrieve project users', async () => {
+    await db.init();
+    await db.createUser(USER);
+    await db.createProject(PROJECT);
+
+    await db.assignUserToProject(PROJECT.id, USER.id);
+
+    const users = await db.getProjectUsers(PROJECT.id);
+    expect(users.length).toBe(1);
+    expect(users[0].id).toBe(USER.id);
+    expect(users[0].name).toBe(USER.name);
+    expect(users[0].email).toBe(USER.email);
+});
+
+test('it gets projects where user is creator or invited', async () => {
+    await db.init();
+    await db.createUser(USER);
+    const user2 = { ...USER, id: 'user-2', email: 'user2@example.com' };
+    await db.createUser(user2);
+
+    await db.createProject(PROJECT); // created by USER
+    await db.createProject({ ...PROJECT, id: 'proj-2', creator_id: 'user-2', name: 'Proj 2' }); // created by user-2
+
+    await db.assignUserToProject('proj-2', USER.id);
+
+    const userProjects = await db.getProjects(USER.id);
+    expect(userProjects.length).toBe(2);
+});

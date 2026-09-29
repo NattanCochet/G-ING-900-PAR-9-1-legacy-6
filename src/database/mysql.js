@@ -47,6 +47,7 @@ async function init() {
                 pool.query(queries.alterTasksAddDeadlineMysql, () => {});
                 pool.query(queries.alterTasksAddPriorityMysql, () => {});
                 pool.query(queries.initTaskUsersMysql, () => {});
+                pool.query(queries.initProjectUsersMysql, () => {});
 
                 console.log(`Connected to mysql db at host ${HOST}`);
                 acc();

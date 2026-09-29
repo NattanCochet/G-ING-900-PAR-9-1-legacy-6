@@ -5,6 +5,8 @@ const {
     getProjectById,
     updateProject,
     deleteProject,
+    inviteUser: inviteUserToProject,
+    getProjectUsers,
 } = require('../../src/routes/projects');
 
 const {
@@ -52,6 +54,8 @@ jest.mock('../../src/database', () => ({
     getUserByEmail: jest.fn(),
     assignUserToTask: jest.fn(),
     getTaskUsers: jest.fn(),
+    assignUserToProject: jest.fn(),
+    getProjectUsers: jest.fn(),
 }));
 
 beforeEach(() => {
@@ -153,6 +157,30 @@ describe('Project routes', () => {
         await deleteProject(req, res);
         expect(db.deleteProject).toHaveBeenCalledWith('proj-1');
         expect(res.sendStatus).toHaveBeenCalledWith(200);
+    });
+
+    test('it invites a user to a project', async () => {
+        const req = { params: { id: 'proj-1' }, body: { email: 'alice@example.com' } };
+        const res = { status: jest.fn().mockReturnThis(), send: jest.fn() };
+        db.getProject.mockResolvedValue({ id: 'proj-1' });
+        db.getUserByEmail.mockResolvedValue({ id: 'user-1', name: 'Alice', email: 'alice@example.com' });
+
+        await inviteUserToProject(req, res);
+        expect(db.getProject).toHaveBeenCalledWith('proj-1');
+        expect(db.getUserByEmail).toHaveBeenCalledWith('alice@example.com');
+        expect(db.assignUserToProject).toHaveBeenCalledWith('proj-1', 'user-1');
+        expect(res.status).toHaveBeenCalledWith(200);
+        expect(res.send).toHaveBeenCalledWith({ message: 'User invited successfully', user: { id: 'user-1', name: 'Alice', email: 'alice@example.com' } });
+    });
+
+    test('it gets users for a project', async () => {
+        const req = { params: { id: 'proj-1' } };
+        const res = { send: jest.fn() };
+        db.getProjectUsers.mockResolvedValue([{ id: 'user-1', name: 'Alice', email: 'alice@example.com' }]);
+
+        await getProjectUsers(req, res);
+        expect(db.getProjectUsers).toHaveBeenCalledWith('proj-1');
+        expect(res.send).toHaveBeenCalledWith([{ id: 'user-1', name: 'Alice', email: 'alice@example.com' }]);
     });
 });
 
