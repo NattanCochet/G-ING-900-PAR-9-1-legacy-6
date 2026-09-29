@@ -40,6 +40,7 @@ app.get('/healthz', (req, res) => res.status(200).json({ status: 'ok' }));
 app.get('/login', (req, res) => res.render('login'));
 app.get('/home', (req, res) => res.render('home'));
 app.get('/register', (req, res) => res.render('register'));
+app.get('/profile', (req, res) => res.render('profile'));
 
 app.use('/', authRoutes);
 app.use('/projects', auth, projectRoutes);
