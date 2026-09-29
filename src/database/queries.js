@@ -11,7 +11,7 @@ module.exports = {
     initProjectsSqlite: 'CREATE TABLE IF NOT EXISTS projects (id varchar(36) PRIMARY KEY, creator_id varchar(36) NOT NULL, name varchar(255) NOT NULL, description text, FOREIGN KEY (creator_id) REFERENCES users(id) ON DELETE CASCADE)',
     initProjectsMysql: 'CREATE TABLE IF NOT EXISTS projects (id varchar(36) PRIMARY KEY, creator_id varchar(36) NOT NULL, name varchar(255) NOT NULL, description text, FOREIGN KEY (creator_id) REFERENCES users(id) ON DELETE CASCADE) DEFAULT CHARSET utf8mb4',
     createProject: 'INSERT INTO projects (id, creator_id, name, description) VALUES (?, ?, ?, ?)',
-    getProjectsByCreator: 'SELECT * FROM projects WHERE creator_id=?',
+    getProjectsByCreator: 'SELECT DISTINCT p.* FROM projects p LEFT JOIN project_users pu ON p.id = pu.project_id WHERE p.creator_id=? OR pu.user_id=?',
     getAllProjects: 'SELECT * FROM projects',
     getProjectById: 'SELECT * FROM projects WHERE id=?',
     updateProject: 'UPDATE projects SET name=?, description=? WHERE id=?',
@@ -48,4 +48,12 @@ module.exports = {
     assignUserToTaskMysql: 'INSERT IGNORE INTO task_users (task_id, user_id) VALUES (?, ?)',
     getTaskUsers: 'SELECT u.id, u.name, u.email FROM users u JOIN task_users tu ON u.id = tu.user_id WHERE tu.task_id = ?',
     removeUserFromTask: 'DELETE FROM task_users WHERE task_id = ? AND user_id = ?',
+
+    // Project Users
+    initProjectUsersSqlite: 'CREATE TABLE IF NOT EXISTS project_users (project_id varchar(36), user_id varchar(36), PRIMARY KEY (project_id, user_id), FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE, FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE)',
+    initProjectUsersMysql: 'CREATE TABLE IF NOT EXISTS project_users (project_id varchar(36), user_id varchar(36), PRIMARY KEY (project_id, user_id), FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE, FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE) DEFAULT CHARSET utf8mb4',
+    assignUserToProjectSqlite: 'INSERT OR IGNORE INTO project_users (project_id, user_id) VALUES (?, ?)',
+    assignUserToProjectMysql: 'INSERT IGNORE INTO project_users (project_id, user_id) VALUES (?, ?)',
+    getProjectUsers: 'SELECT u.id, u.name, u.email FROM users u JOIN project_users pu ON u.id = pu.user_id WHERE pu.project_id = ?',
+    removeUserFromProject: 'DELETE FROM project_users WHERE project_id = ? AND user_id = ?',
 };
