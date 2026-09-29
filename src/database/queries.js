@@ -40,4 +40,12 @@ module.exports = {
     getTaskById: 'SELECT * FROM tasks WHERE id=?',
     updateTask: 'UPDATE tasks SET name=?, description=?, completed=?, column_id=?, deadline=?, priority=? WHERE id=?',
     deleteTask: 'DELETE FROM tasks WHERE id=?',
+
+    // Task Users
+    initTaskUsersSqlite: 'CREATE TABLE IF NOT EXISTS task_users (task_id varchar(36), user_id varchar(36), PRIMARY KEY (task_id, user_id), FOREIGN KEY (task_id) REFERENCES tasks(id) ON DELETE CASCADE, FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE)',
+    initTaskUsersMysql: 'CREATE TABLE IF NOT EXISTS task_users (task_id varchar(36), user_id varchar(36), PRIMARY KEY (task_id, user_id), FOREIGN KEY (task_id) REFERENCES tasks(id) ON DELETE CASCADE, FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE) DEFAULT CHARSET utf8mb4',
+    assignUserToTaskSqlite: 'INSERT OR IGNORE INTO task_users (task_id, user_id) VALUES (?, ?)',
+    assignUserToTaskMysql: 'INSERT IGNORE INTO task_users (task_id, user_id) VALUES (?, ?)',
+    getTaskUsers: 'SELECT u.id, u.name, u.email FROM users u JOIN task_users tu ON u.id = tu.user_id WHERE tu.task_id = ?',
+    removeUserFromTask: 'DELETE FROM task_users WHERE task_id = ? AND user_id = ?',
 };
