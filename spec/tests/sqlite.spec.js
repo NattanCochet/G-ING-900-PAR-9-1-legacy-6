@@ -191,3 +191,19 @@ test('it closes connection correctly on teardown', async () => {
     await db.init();
     await db.teardown();
 });
+
+test('it can assign a user to a task and retrieve task users', async () => {
+    await db.init();
+    await db.createUser(USER);
+    await db.createProject(PROJECT);
+    await db.createColumn(COLUMN);
+    await db.createTask(TASK);
+
+    await db.assignUserToTask(TASK.id, USER.id);
+
+    const users = await db.getTaskUsers(TASK.id);
+    expect(users.length).toBe(1);
+    expect(users[0].id).toBe(USER.id);
+    expect(users[0].name).toBe(USER.name);
+    expect(users[0].email).toBe(USER.email);
+});

@@ -21,6 +21,8 @@ const {
     getTaskById,
     updateTask,
     deleteTask,
+    inviteUser,
+    getTaskUsers,
 } = require('../../src/routes/tasks');
 
 const { v4: uuid } = require('uuid');
@@ -46,6 +48,10 @@ jest.mock('../../src/database', () => ({
     getTask: jest.fn(),
     updateTask: jest.fn(),
     deleteTask: jest.fn(),
+    
+    getUserByEmail: jest.fn(),
+    assignUserToTask: jest.fn(),
+    getTaskUsers: jest.fn(),
 }));
 
 beforeEach(() => {
@@ -369,5 +375,29 @@ describe('Task routes', () => {
         await deleteTask(req, res);
         expect(db.deleteTask).toHaveBeenCalledWith('task-1');
         expect(res.sendStatus).toHaveBeenCalledWith(200);
+    });
+
+    test('it invites a user to a task', async () => {
+        const req = { params: { id: 'task-1' }, body: { email: 'alice@example.com' } };
+        const res = { status: jest.fn().mockReturnThis(), send: jest.fn() };
+        db.getTask.mockResolvedValue({ id: 'task-1' });
+        db.getUserByEmail.mockResolvedValue({ id: 'user-1', name: 'Alice', email: 'alice@example.com' });
+
+        await inviteUser(req, res);
+        expect(db.getTask).toHaveBeenCalledWith('task-1');
+        expect(db.getUserByEmail).toHaveBeenCalledWith('alice@example.com');
+        expect(db.assignUserToTask).toHaveBeenCalledWith('task-1', 'user-1');
+        expect(res.status).toHaveBeenCalledWith(200);
+        expect(res.send).toHaveBeenCalledWith({ message: 'User invited successfully', user: { id: 'user-1', name: 'Alice', email: 'alice@example.com' } });
+    });
+
+    test('it gets users for a task', async () => {
+        const req = { params: { id: 'task-1' } };
+        const res = { send: jest.fn() };
+        db.getTaskUsers.mockResolvedValue([{ id: 'user-1', name: 'Alice', email: 'alice@example.com' }]);
+
+        await getTaskUsers(req, res);
+        expect(db.getTaskUsers).toHaveBeenCalledWith('task-1');
+        expect(res.send).toHaveBeenCalledWith([{ id: 'user-1', name: 'Alice', email: 'alice@example.com' }]);
     });
 });

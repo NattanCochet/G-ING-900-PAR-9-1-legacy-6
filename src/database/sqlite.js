@@ -28,7 +28,10 @@ function init() {
                     if (err) return rej(err);
                     db.run(queries.alterTasksAddDeadlineSqlite, () => {});
                     db.run(queries.alterTasksAddPrioritySqlite, () => {});
-                    acc();
+                    db.run(queries.initTaskUsersSqlite, err => {
+                        if (err) return rej(err);
+                        acc();
+                    });
                 });
             });
         });
@@ -284,6 +287,24 @@ async function deleteTask(id) {
     });
 }
 
+async function assignUserToTask(taskId, userId) {
+    return new Promise((acc, rej) => {
+        db.run(queries.assignUserToTaskSqlite, [taskId, userId], err => {
+            if (err) return rej(err);
+            acc();
+        });
+    });
+}
+
+async function getTaskUsers(taskId) {
+    return new Promise((acc, rej) => {
+        db.all(queries.getTaskUsers, [taskId], (err, rows) => {
+            if (err) return rej(err);
+            acc(rows || []);
+        });
+    });
+}
+
 module.exports = {
     location,
     init,
@@ -308,4 +329,6 @@ module.exports = {
     getTask,
     updateTask,
     deleteTask,
+    assignUserToTask,
+    getTaskUsers,
 };
