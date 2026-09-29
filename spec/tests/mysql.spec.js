@@ -48,7 +48,7 @@ test('it initializes correctly', async () => {
         expect.objectContaining({ port: 3306, timeout: 10000, waitForDns: true }),
     );
     expect(mysql.createPool.mock.calls.length).toBe(1);
-    expect(poolMock.query.mock.calls.length).toBe(3);
+    expect(poolMock.query.mock.calls.length).toBe(4);
     expect(poolMock.query.mock.calls[0][0]).toContain('CREATE TABLE IF NOT EXISTS tasks');
 });
 
@@ -86,8 +86,8 @@ test('it can store a task', async () => {
 
     await db.createTask(TASK);
 
-    expect(poolMock.query.mock.calls.length).toBe(4);
-    expect(poolMock.query.mock.calls[3][1]).toEqual([
+    expect(poolMock.query.mock.calls.length).toBe(5);
+    expect(poolMock.query.mock.calls[4][1]).toEqual([
         TASK.id,
         TASK.project_id,
         TASK.column_id,
@@ -121,7 +121,7 @@ test('it can get tasks', async () => {
 
     const tasks = await db.getTasks('proj-1');
 
-    expect(poolMock.query.mock.calls.length).toBe(4);
+    expect(poolMock.query.mock.calls.length).toBe(5);
     expect(tasks).toEqual([
         { id: TASK.id, name: TASK.name, completed: false },
         { id: 'task-2', name: 'Task 2', completed: true },
@@ -146,7 +146,7 @@ test('it can get a single task', async () => {
 
     const task = await db.getTask(TASK.id);
 
-    expect(poolMock.query.mock.calls.length).toBe(4);
+    expect(poolMock.query.mock.calls.length).toBe(5);
     expect(task).toEqual(expect.objectContaining({ id: TASK.id, name: TASK.name }));
 });
 
@@ -170,7 +170,7 @@ test('it can update an existing task', async () => {
     const updated = { name: 'Updated name', completed: true, column_id: 'col-2', deadline: '2026-12-31', priority: 'high' };
     await db.updateTask(TASK.id, updated);
 
-    expect(poolMock.query.mock.calls.length).toBe(4);
+    expect(poolMock.query.mock.calls.length).toBe(5);
 });
 
 test('it can remove an existing task', async () => {
@@ -181,5 +181,5 @@ test('it can remove an existing task', async () => {
 
     await db.deleteTask(TASK.id);
 
-    expect(poolMock.query.mock.calls.length).toBe(4);
+    expect(poolMock.query.mock.calls.length).toBe(5);
 });
