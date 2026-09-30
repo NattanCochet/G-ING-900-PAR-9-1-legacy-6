@@ -6,6 +6,7 @@ on:
 
 jobs:
   lint:
+    if: github.repository == 'EpitechPGE45-2026/G-ING-900-PAR-9-1-legacy-6'
     runs-on: self-hosted
 
     steps:
