@@ -14,6 +14,8 @@ jest.mock('../../src/database', () => ({
     getUserByEmail: jest.fn(),
     createUser: jest.fn(),
     deleteUser: jest.fn(),
+    getUserById: jest.fn(),
+    updateUser: jest.fn(),
 
     createProject: jest.fn(),
     getProject: jest.fn(),
@@ -35,7 +37,7 @@ jest.mock('bcryptjs', () => ({ hash: jest.fn().mockResolvedValue('hashed') }));
 jest.mock('jsonwebtoken', () => ({ sign: jest.fn().mockReturnValue('token') }));
 jest.mock('nodemailer');
 
-const { signup, deleteUser } = require('../../src/routes/auth');
+const { signup, deleteUser, updateUser } = require('../../src/routes/auth');
 const { addProject, updateProject, deleteProject } = require('../../src/routes/projects');
 const { addColumn, updateColumn, deleteColumn } = require('../../src/routes/columns');
 const { addTask, updateTask, deleteTask } = require('../../src/routes/tasks');
@@ -68,6 +70,15 @@ describe('Producer contracts (routes -> eventBus)', () => {
         await deleteUser({ params: { id: 'user-1' }, user: { id: 'user-1' } }, res());
 
         expect(validateEventPayload(eventTypes.USER_DELETED, await captured)).toEqual({ valid: true, errors: null });
+    });
+
+    test('updateUser emits a USER_UPDATED payload matching the contract', async () => {
+        db.getUserById.mockResolvedValue({ id: 'user-1', name: 'Alice', email: 'alice@example.com', password: 'hashed' });
+        const captured = nextEmittedPayload(eventTypes.USER_UPDATED);
+
+        await updateUser({ params: { id: 'user-1' }, user: { id: 'user-1' }, body: { name: 'Alice', email: 'alice@updated.example.com' } }, res());
+
+        expect(validateEventPayload(eventTypes.USER_UPDATED, await captured)).toEqual({ valid: true, errors: null });
     });
 
     test('addProject emits a PROJECT_CREATED payload matching the contract', async () => {

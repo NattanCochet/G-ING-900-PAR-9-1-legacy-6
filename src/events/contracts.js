@@ -29,6 +29,17 @@ const schemas = {
         properties: { id: idProp },
     },
 
+    [eventTypes.USER_UPDATED]: {
+        type: 'object',
+        additionalProperties: false,
+        required: ['id', 'name', 'email'],
+        properties: {
+            id: idProp,
+            name: { type: 'string' },
+            email: { type: 'string' },
+        },
+    },
+
     [eventTypes.PROJECT_CREATED]: {
         type: 'object',
         additionalProperties: false,
@@ -103,6 +114,7 @@ const validators = Object.fromEntries(
 const examples = {
     [eventTypes.USER_CREATED]: { id: 'user-1', name: 'Alice', email: 'alice@example.com' },
     [eventTypes.USER_DELETED]: { id: 'user-1' },
+    [eventTypes.USER_UPDATED]: { id: 'user-1', name: 'Alice', email: 'alice@updated.example.com' },
     [eventTypes.PROJECT_CREATED]: { id: 'proj-1', creator_id: 'user-1', name: 'Project', description: null },
     [eventTypes.PROJECT_UPDATED]: { id: 'proj-1', creator_id: 'user-1', name: 'Project', description: 'Updated' },
     [eventTypes.PROJECT_DELETED]: { id: 'proj-1' },
