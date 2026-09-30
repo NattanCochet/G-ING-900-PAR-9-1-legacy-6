@@ -38,6 +38,7 @@
         if (!container) return;
         const toast = document.createElement('div');
         toast.className = `toast ${type}`;
+        toast.setAttribute('role', type === 'error' ? 'alert' : 'status');
         toast.textContent = message;
         container.appendChild(toast);
         setTimeout(() => toast.remove(), 3000);
@@ -368,10 +369,14 @@
     const startColumnRename = (columnEl, column) => {
         const header = columnEl.querySelector('.column-header');
         const nameSpan = header.querySelector('.column-name');
+        const inputId = `column-name-${column.id}`;
 
         const form = document.createElement('form');
         form.className = 'rename-form';
-        form.innerHTML = `<input type="text" class="inline-edit-input" value="${escapeHtml(column.name)}" autocomplete="off" />`;
+        form.innerHTML = `
+            <label class="visually-hidden" for="${inputId}">Column name</label>
+            <input type="text" id="${inputId}" class="inline-edit-input" value="${escapeHtml(column.name)}" autocomplete="off" />
+        `;
         header.replaceChild(form, nameSpan);
 
         const input = form.querySelector('input');
@@ -402,9 +407,13 @@
         btn.textContent = '+ Add column';
 
         btn.addEventListener('click', () => {
+            const inputId = 'new-column-name';
             const form = document.createElement('form');
             form.className = 'add-column-form';
-            form.innerHTML = `<input type="text" placeholder="Column name" autocomplete="off" />`;
+            form.innerHTML = `
+                <label class="visually-hidden" for="${inputId}">Column name</label>
+                <input type="text" id="${inputId}" placeholder="Column name" autocomplete="off" />
+            `;
             btn.replaceWith(form);
             const input = form.querySelector('input');
             input.focus();
@@ -505,8 +514,10 @@
     const projectDescriptionInput = document.getElementById('projectDescription');
 
     let editingProject = null;
+    let projectModalOpener = null;
 
     const openProjectModal = (project = null) => {
+        projectModalOpener = document.activeElement;
         editingProject = project;
         projectForm.reset();
 
@@ -527,6 +538,8 @@
     const closeProjectModal = () => {
         projectModalOverlay.hidden = true;
         editingProject = null;
+        projectModalOpener?.focus();
+        projectModalOpener = null;
     };
 
     document.getElementById('newProjectBtn').addEventListener('click', () => openProjectModal());
@@ -580,6 +593,7 @@
 
     let editingTask = null;
     let targetColumn = null;
+    let taskModalOpener = null;
 
     // Members already assigned are checked and locked (there is no unassign route).
     const renderAssignList = (task) => {
@@ -607,6 +621,7 @@
     };
 
     const openTaskModal = (task = null, column = null) => {
+        taskModalOpener = document.activeElement;
         editingTask = task;
         targetColumn = column;
         taskForm.reset();
@@ -634,11 +649,43 @@
         taskModalOverlay.hidden = true;
         editingTask = null;
         targetColumn = null;
+        taskModalOpener?.focus();
+        taskModalOpener = null;
     };
 
     document.getElementById('cancelTaskBtn').addEventListener('click', closeTaskModal);
     taskModalOverlay.addEventListener('click', (e) => {
         if (e.target === taskModalOverlay) closeTaskModal();
+    });
+
+    const trapModalFocus = (overlay, e) => {
+        if (e.key !== 'Tab' || overlay.hidden) return;
+
+        const focusableElements = overlay.querySelectorAll(
+            'button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+        );
+        const firstFocusableElement = focusableElements[0];
+        const lastFocusableElement = focusableElements[focusableElements.length - 1];
+
+        if (!firstFocusableElement || !lastFocusableElement) return;
+        if (e.shiftKey && document.activeElement === firstFocusableElement) {
+            e.preventDefault();
+            lastFocusableElement.focus();
+        } else if (!e.shiftKey && document.activeElement === lastFocusableElement) {
+            e.preventDefault();
+            firstFocusableElement.focus();
+        }
+    };
+
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            if (!projectModalOverlay.hidden) closeProjectModal();
+            if (!taskModalOverlay.hidden) closeTaskModal();
+            return;
+        }
+
+        trapModalFocus(projectModalOverlay, e);
+        trapModalFocus(taskModalOverlay, e);
     });
 
     taskForm.addEventListener('submit', async (e) => {
