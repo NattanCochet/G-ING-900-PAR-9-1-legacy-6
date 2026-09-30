@@ -4,7 +4,8 @@ module.exports = {
     initUsersMysql: 'CREATE TABLE IF NOT EXISTS users (id varchar(36) PRIMARY KEY, name varchar(255), email varchar(255) UNIQUE, password varchar(255)) DEFAULT CHARSET utf8mb4',
     createUser: 'INSERT INTO users (id, name, email, password) VALUES (?, ?, ?, ?)',
     getUserByEmail: 'SELECT * FROM users WHERE email=?',
-    getUserById: 'SELECT id, name, email FROM users WHERE id=?',
+    getUserById: 'SELECT * FROM users WHERE id=?',
+    updateUser: 'UPDATE users SET name=?, email=?, password=? WHERE id=?',
     deleteUser: 'DELETE FROM users WHERE id=?',
 
     // Projects (Projet: id, creator_id, name, description)

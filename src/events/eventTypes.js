@@ -1,6 +1,7 @@
 // Domain event names shared between emitters (routes) and listeners.
 module.exports = {
     USER_CREATED: 'user.created',
+    USER_UPDATED: 'user.updated',
     USER_DELETED: 'user.deleted',
 
     PROJECT_CREATED: 'project.created',

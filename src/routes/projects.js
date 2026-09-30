@@ -238,10 +238,10 @@ const getProjectUsers = async (req, res) => {
 
 /**
  * @openapi
- * /projects/{id}/owner:
- *   get:
- *     summary: Get the owner (creator) of a project
- *     operationId: getProjectOwner
+ * /projects/{id}/users/{userId}:
+ *   delete:
+ *     summary: Remove a user from a project
+ *     operationId: removeUserFromProject
  *     tags: [Projects]
  *     parameters:
  *       - name: id
@@ -249,25 +249,30 @@ const getProjectUsers = async (req, res) => {
  *         required: true
  *         schema:
  *           type: string
+ *       - name: userId
+ *         in: path
+ *         required: true
+ *         schema:
+ *           type: string
  *     responses:
  *       200:
- *         description: Successful response
+ *         description: User removed successfully
  *       404:
- *         description: Project or owner not found
+ *         description: Project not found
  *       500:
  *         description: Internal server error
  */
-const getProjectOwner = async (req, res) => {
+const removeUser = async (req, res) => {
     try {
-        const project = await db.getProject(req.params.id);
+        const { id, userId } = req.params;
+
+        const project = await db.getProject(id);
         if (!project) {
             return res.status(404).send({ error: 'Project not found' });
         }
-        const owner = await db.getUserById(project.creator_id);
-        if (!owner) {
-            return res.status(404).send({ error: 'Owner not found' });
-        }
-        res.send(owner);
+
+        await db.removeUserFromProject(id, userId);
+        res.status(200).send({ message: 'User removed successfully' });
     } catch (err) {
         res.status(500).send({ error: err.message });
     }
@@ -284,7 +289,7 @@ router.delete('/:id', deleteProject);
 
 router.post('/:id/invite', inviteUser);
 router.get('/:id/users', getProjectUsers);
-router.get('/:id/owner', getProjectOwner);
+router.delete('/:id/users/:userId', removeUser);
 
 module.exports = router;
 module.exports.addProject = addProject;
@@ -294,4 +299,4 @@ module.exports.updateProject = updateProject;
 module.exports.deleteProject = deleteProject;
 module.exports.inviteUser = inviteUser;
 module.exports.getProjectUsers = getProjectUsers;
-module.exports.getProjectOwner = getProjectOwner;
+module.exports.removeUser = removeUser;

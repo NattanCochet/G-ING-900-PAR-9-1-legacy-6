@@ -82,6 +82,19 @@ async function getUserById(id) {
     });
 }
 
+async function updateUser(id, user) {
+    return new Promise((acc, rej) => {
+        db.run(
+            queries.updateUser,
+            [user.name, user.email, user.password, id],
+            err => {
+                if (err) return rej(err);
+                acc();
+            },
+        );
+    });
+}
+
 async function deleteUser(id) {
     return new Promise((acc, rej) => {
         db.run(queries.deleteUser, [id], err => {
@@ -342,6 +355,7 @@ module.exports = {
     createUser,
     getUserByEmail,
     getUserById,
+    updateUser,
     deleteUser,
     createProject,
     getProjects,
