@@ -69,7 +69,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function showToast(message, type = 'success') {
         const toast = document.createElement('div');
-        toast.className = 'toast ' + type;
+        toast.className = 'app-toast ' + type;
         toast.textContent = message;
         toasterContainer.appendChild(toast);
 

@@ -213,7 +213,7 @@
     z-index: 2000;
 }
 
-.toast {
+.app-toast {
     background: var(--card-bg);
     color: var(--text);
     padding: 16px 24px;
@@ -226,15 +226,15 @@
     transform: translateX(120%);
 }
 
-.toast.success {
+.app-toast.success {
     border-left-color: #34c759;
 }
 
-.toast.error {
+.app-toast.error {
     border-left-color: var(--red);
 }
 
-.toast.fade-out {
+.app-toast.fade-out {
     animation: slideOut 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 

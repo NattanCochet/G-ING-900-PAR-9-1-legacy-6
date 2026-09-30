@@ -46,19 +46,16 @@ window.projectMembers = {
 const InviteAlerts = ({ invites, onOpen, onDismiss }) => (
     <>
         {invites.map((invite) => (
-            <Alert key={invite.id} status="accent">
-                <Alert.Indicator />
-                <Alert.Content>
-                    <Alert.Title>You&apos;ve been invited to a project</Alert.Title>
-                    <Alert.Description>
-                        You can now access &quot;{invite.name}&quot;.
-                    </Alert.Description>
-                    <div className="invite-alert-actions">
-                        <button type="button" className="invite-alert-btn" onClick={() => onOpen(invite)}>Open</button>
-                        <button type="button" className="invite-alert-btn" onClick={() => onDismiss(invite)}>Dismiss</button>
-                    </div>
-                </Alert.Content>
-            </Alert>
+            <div key={invite.id} className="app-toast success">
+                <div style={{ fontWeight: 600, marginBottom: '6px' }}>You&apos;ve been invited to a project</div>
+                <div style={{ marginBottom: '12px' }}>
+                    You can now access &quot;{invite.name}&quot;.
+                </div>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                    <button type="button" className="primary-btn" style={{ padding: '6px 12px', fontSize: '13px' }} onClick={() => onOpen(invite)}>Open</button>
+                    <button type="button" className="secondary-btn" style={{ padding: '6px 12px', fontSize: '13px' }} onClick={() => onDismiss(invite)}>Dismiss</button>
+                </div>
+            </div>
         ))}
     </>
 );

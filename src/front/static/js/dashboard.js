@@ -37,11 +37,14 @@
         const container = document.getElementById('toasterContainer');
         if (!container) return;
         const toast = document.createElement('div');
-        toast.className = `toast ${type}`;
+        toast.className = `app-toast ${type}`;
         toast.setAttribute('role', type === 'error' ? 'alert' : 'status');
         toast.textContent = message;
         container.appendChild(toast);
-        setTimeout(() => toast.remove(), 3000);
+        setTimeout(() => {
+            toast.classList.add('fade-out');
+            toast.addEventListener('animationend', () => toast.remove());
+        }, 3000);
     };
 
     window.addEventListener('app-notification', (e) => {
@@ -66,8 +69,15 @@
                 throw new Error('Unauthorized');
             }
             if (!response.ok) {
-                const err = await response.text();
-                showToast(err || 'An error occurred', 'error');
+                const text = await response.text();
+                let errStr = 'An error occurred';
+                try {
+                    const parsed = JSON.parse(text);
+                    errStr = parsed.error || errStr;
+                } catch {
+                    if (text) errStr = text;
+                }
+                showToast(errStr, 'error');
             }
             return response;
         } catch (error) {
@@ -747,8 +757,20 @@
 
         if (window.projectMembers) window.projectMembers.render(membersAvatars, projectOwner, users);
         membersList.innerHTML = users.length
-            ? users.map((u) => `<li><strong>${escapeHtml(u.name)}</strong> <span>${escapeHtml(u.email)}</span></li>`).join('')
+            ? users.map((u) => `<li style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+                <div><strong>${escapeHtml(u.name)}</strong> <span>${escapeHtml(u.email)}</span></div>
+                <button class="card-icon-btn delete-project remove-member-btn" data-user-id="${u.id}" title="Remove member" aria-label="Remove member">&times;</button>
+            </li>`).join('')
             : '<li class="members-empty">No invited members yet.</li>';
+
+        membersList.querySelectorAll('.remove-member-btn').forEach(btn => {
+            btn.addEventListener('click', async (e) => {
+                const userId = e.currentTarget.getAttribute('data-user-id');
+                if (!confirm('Remove this member from the project?')) return;
+                await fetchWithAuth(`/projects/${currentProject.id}/users/${userId}`, { method: 'DELETE' });
+                await loadMembers();
+            });
+        });
     };
 
     const startMembersPolling = () => {

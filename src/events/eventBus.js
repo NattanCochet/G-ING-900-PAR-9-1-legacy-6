@@ -9,12 +9,22 @@ class eventBus extends EventEmitter {
         if (!valid) {
             console.warn(`[eventBus] payload for "${event}" violates its contract (see src/events/contracts.js):`, errors);
         }
-        try {
-            return super.emit(event, payload, ...rest);
-        } catch (err) {
-            console.error(`[eventBus] listener for "${event}" threw:`, err);
-            return false;
+        
+        const listeners = this.rawListeners(event);
+        let handled = listeners.length > 0;
+        
+        for (const listener of listeners) {
+            try {
+                const res = Reflect.apply(listener, this, [payload, ...rest]);
+                if (res instanceof Promise) {
+                    res.catch(err => console.error(`[eventBus] async listener for "${event}" threw:`, err));
+                }
+            } catch (err) {
+                console.error(`[eventBus] sync listener for "${event}" threw:`, err);
+            }
         }
+        
+        return handled;
     }
 }
 

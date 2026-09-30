@@ -278,10 +278,27 @@ const removeUser = async (req, res) => {
     }
 };
 
+const getProjectOwner = async (req, res) => {
+    try {
+        const project = await db.getProject(req.params.id);
+        if (!project) {
+            return res.status(404).send({ error: 'Project not found' });
+        }
+        const user = await db.getUserById(project.creator_id);
+        if (!user) {
+            return res.status(404).send({ error: 'Owner not found' });
+        }
+        res.send({ id: user.id, name: user.name, email: user.email });
+    } catch (err) {
+        res.status(500).send({ error: err.message });
+    }
+};
+
 router.use('/:projectId/columns', columnRouter);
 router.use('/:projectId/tasks', taskRouter);
 
 router.get('/', getProjects);
+router.get('/:id/owner', getProjectOwner);
 router.post('/', addProject);
 router.get('/:id', getProjectById);
 router.put('/:id', updateProject);
@@ -300,3 +317,4 @@ module.exports.deleteProject = deleteProject;
 module.exports.inviteUser = inviteUser;
 module.exports.getProjectUsers = getProjectUsers;
 module.exports.removeUser = removeUser;
+module.exports.getProjectOwner = getProjectOwner;
