@@ -110,6 +110,7 @@
     };
 
     const showProjectsView = () => {
+        stopMembersPolling();
         currentProject = null;
         boardView.hidden = true;
         projectsView.hidden = false;
@@ -122,11 +123,58 @@
 
     // --- Projects ---
 
+    const PROJECTS_POLL_MS = 5000;
+    const inviteAlertsEl = document.getElementById('inviteAlerts');
+    let lastProjectsKey = '';
+
+    const currentUserId = () => {
+        try {
+            return JSON.parse(atob(token.split('.')[1])).id;
+        } catch {
+            return null;
+        }
+    };
+
+    // Projects created by someone else that we haven't seen yet are new invitations.
+    // The first load only records what we already have, so it never alerts.
+    const notifyInvites = (projects) => {
+        const userId = currentUserId();
+        if (!userId) return;
+        const storageKey = `seenProjects:${userId}`;
+        let seen = null;
+        try {
+            seen = JSON.parse(localStorage.getItem(storageKey) || 'null');
+        } catch {
+            seen = null;
+        }
+
+        if (seen && window.inviteAlerts) {
+            const invites = projects.filter((p) => p.creator_id !== userId && !seen.includes(p.id));
+            if (invites.length) {
+                window.inviteAlerts.add(inviteAlertsEl, invites, (invite) => {
+                    const project = projects.find((p) => p.id === invite.id);
+                    if (project) openProject(project);
+                });
+            }
+        }
+        localStorage.setItem(storageKey, JSON.stringify(projects.map((p) => p.id)));
+    };
+
     const loadProjects = async () => {
         const res = await fetchWithAuth('/projects');
+        if (!res.ok) return;
         const projects = await res.json();
+        notifyInvites(projects);
+
+        const key = JSON.stringify(projects.map((p) => [p.id, p.name, p.description]));
+        if (key === lastProjectsKey) return;
+        lastProjectsKey = key;
         renderProjects(projects);
     };
+
+    setInterval(() => {
+        if (!document.hidden) loadProjects().catch(() => {});
+    }, PROJECTS_POLL_MS);
 
     const renderProjects = (projects) => {
         projectsGrid.innerHTML = '';
@@ -178,6 +226,7 @@
         boardTitle.textContent = project.name;
         boardSubtitle.textContent = project.description || '';
         showBoardView();
+        startMembersPolling();
         await loadBoard();
     };
 
@@ -190,7 +239,15 @@
         ]);
         columns = await columnsRes.json();
         tasks = await tasksRes.json();
+        await Promise.all(tasks.map(loadAssignees));
         renderBoard();
+    };
+
+    const assignees = {};
+
+    const loadAssignees = async (task) => {
+        const res = await fetchWithAuth(`/tasks/${task.id}/users`);
+        assignees[task.id] = res.ok ? await res.json() : [];
     };
 
     const renderBoard = () => {
@@ -231,7 +288,8 @@
             e.dataTransfer.dropEffect = 'move';
             taskList.classList.add('drag-over');
         });
-        taskList.addEventListener('dragleave', () => {
+        taskList.addEventListener('dragleave', (e) => {
+            if (taskList.contains(e.relatedTarget)) return;
             taskList.classList.remove('drag-over');
         });
         taskList.addEventListener('drop', async (e) => {
@@ -278,12 +336,18 @@
                 <span class="task-name">${escapeHtml(task.name)}</span>
                 ${task.description ? `<p class="task-description">${escapeHtml(task.description)}</p>` : ''}
                 ${badgesHtml ? `<div class="task-meta">${badgesHtml}</div>` : ''}
+                <div class="task-assignees"></div>
             </div>
             <div class="task-actions">
                 <button class="task-icon-btn task-edit" title="Edit task" aria-label="Edit task">&#9998;</button>
                 <button class="task-icon-btn task-remove" title="Delete task" aria-label="Delete task">&times;</button>
             </div>
         `;
+
+        const assigneesEl = el.querySelector('.task-assignees');
+        if (window.taskAssignees && (assignees[task.id] || []).length) {
+            window.taskAssignees.render(assigneesEl, assignees[task.id]);
+        }
 
         el.addEventListener('dragstart', (e) => {
             e.dataTransfer.setData('text/plain', task.id);
@@ -396,8 +460,8 @@
         await loadBoard();
     };
 
-    const createTask = async (column, { name, description, priority, deadline }) => {
-        await fetchWithAuth('/tasks', {
+    const createTask = async (column, { name, description, priority, deadline, assignEmails = [] }) => {
+        const res = await fetchWithAuth('/tasks', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -409,6 +473,10 @@
                 column_id: column.id,
             }),
         });
+        if (res.ok && assignEmails.length) {
+            const created = await res.json();
+            await assignUsers(created.id, assignEmails);
+        }
         await loadBoard();
     };
 
@@ -421,12 +489,13 @@
         await loadBoard();
     };
 
-    const updateTask = async (task, { name, description, priority, deadline }) => {
+    const updateTask = async (task, { name, description, priority, deadline, assignEmails = [] }) => {
         await fetchWithAuth(`/tasks/${task.id}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ name, description, priority, deadline }),
         });
+        await assignUsers(task.id, assignEmails);
         await loadBoard();
     };
 
@@ -514,27 +583,56 @@
     const taskModalTitle = document.getElementById('taskModalTitle');
     const taskSubmitBtn = document.getElementById('taskSubmitBtn');
     const taskForm = document.getElementById('taskForm');
+    const deadlinePicker = window.deadlinePicker;
     const taskModalNameInput = document.getElementById('taskModalName');
     const taskModalDescriptionInput = document.getElementById('taskModalDescription');
-    const taskModalDeadlineInput = document.getElementById('taskModalDeadline');
+    if (window.deadlinePicker) window.deadlinePicker.mount(document.getElementById('taskDeadlinePicker'));
     const taskModalPriorityInput = document.getElementById('taskModalPriority');
+
+    const taskAssignList = document.getElementById('taskAssignList');
 
     let editingTask = null;
     let targetColumn = null;
     let taskModalOpener = null;
+
+    // Members already assigned are checked and locked (there is no unassign route).
+    const renderAssignList = (task) => {
+        const assigned = new Set(task ? (assignees[task.id] || []).map((u) => u.id) : []);
+        taskAssignList.innerHTML = membersCache.length
+            ? membersCache.map((m) => `
+                <label class="assign-option">
+                    <input type="checkbox" value="${escapeHtml(m.email)}" ${assigned.has(m.id) ? 'checked disabled' : ''} />
+                    <strong>${escapeHtml(m.name)}</strong> <span>${escapeHtml(m.email)}</span>
+                </label>`).join('')
+            : '<p class="assign-empty">No members to assign.</p>';
+    };
+
+    const selectedAssignees = () =>
+        [...taskAssignList.querySelectorAll('input:checked:not(:disabled)')].map((i) => i.value);
+
+    const assignUsers = async (taskId, emails) => {
+        for (const email of emails) {
+            await fetchWithAuth(`/tasks/${taskId}/invite`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email }),
+            });
+        }
+    };
 
     const openTaskModal = (task = null, column = null) => {
         taskModalOpener = document.activeElement;
         editingTask = task;
         targetColumn = column;
         taskForm.reset();
+        deadlinePicker.set(null);
 
         if (task) {
             taskModalTitle.textContent = 'Edit Task';
             taskSubmitBtn.textContent = 'Save';
             taskModalNameInput.value = task.name;
             taskModalDescriptionInput.value = task.description || '';
-            taskModalDeadlineInput.value = task.deadline || '';
+            deadlinePicker.set(task.deadline);
             taskModalPriorityInput.value = task.priority || 'none';
         } else {
             taskModalTitle.textContent = 'New Task';
@@ -542,6 +640,7 @@
             taskModalPriorityInput.value = 'none';
         }
 
+        renderAssignList(task);
         taskModalOverlay.hidden = false;
         taskModalNameInput.focus();
     };
@@ -593,21 +692,118 @@
         e.preventDefault();
         const name = taskModalNameInput.value.trim();
         const description = taskModalDescriptionInput.value.trim();
-        const deadline = taskModalDeadlineInput.value;
+        const deadline = deadlinePicker.get();
         const priority = taskModalPriorityInput.value;
         if (!name) return;
 
         if (editingTask) {
-            await updateTask(editingTask, { name, description: description || null, deadline: deadline || null, priority });
+            await updateTask(editingTask, { name, description: description || null, deadline: deadline || null, priority, assignEmails: selectedAssignees() });
             showToast('Task updated', 'success');
         } else if (targetColumn) {
-            await createTask(targetColumn, { name, description: description || null, deadline: deadline || null, priority });
+            await createTask(targetColumn, { name, description: description || null, deadline: deadline || null, priority, assignEmails: selectedAssignees() });
             showToast('Task added', 'success');
         } else {
             return;
         }
 
         closeTaskModal();
+    });
+
+    // --- Members ---
+
+    const membersModalOverlay = document.getElementById('membersModalOverlay');
+    const membersList = document.getElementById('membersList');
+    const inviteForm = document.getElementById('inviteForm');
+    const inviteEmailInput = document.getElementById('inviteEmail');
+
+    const membersAvatars = document.getElementById('membersAvatars');
+    const MEMBERS_POLL_MS = 5000;
+    let membersTimer = null;
+    let lastMembersKey = '';
+    let projectOwner = null;
+    let membersCache = [];
+
+    const loadMembers = async () => {
+        const projectId = currentProject && currentProject.id;
+        if (!projectId) return;
+        const res = await fetchWithAuth(`/projects/${projectId}/users`);
+        if (!res.ok || !currentProject || currentProject.id !== projectId) return;
+        const users = await res.json();
+
+        if (!projectOwner || projectOwner.projectId !== projectId) {
+            const ownerRes = await fetchWithAuth(`/projects/${projectId}/owner`);
+            projectOwner = ownerRes.ok ? { ...(await ownerRes.json()), projectId } : null;
+            lastMembersKey = '';
+        }
+
+        membersCache = [projectOwner, ...users]
+            .filter(Boolean)
+            .map(({ id, name, email }) => ({ id, name, email }));
+
+        // Only re-render when the member list actually changed.
+        const key = users.map((u) => u.id).join(',');
+        if (key === lastMembersKey) return;
+        lastMembersKey = key;
+
+        if (window.projectMembers) window.projectMembers.render(membersAvatars, projectOwner, users);
+        membersList.innerHTML = users.length
+            ? users.map((u) => `<li><strong>${escapeHtml(u.name)}</strong> <span>${escapeHtml(u.email)}</span></li>`).join('')
+            : '<li class="members-empty">No invited members yet.</li>';
+    };
+
+    const startMembersPolling = () => {
+        stopMembersPolling();
+        lastMembersKey = '';
+        projectOwner = null;
+        loadMembers();
+        membersTimer = setInterval(() => {
+            if (!document.hidden) loadMembers().catch(() => {});
+        }, MEMBERS_POLL_MS);
+    };
+
+    function stopMembersPolling() {
+        clearInterval(membersTimer);
+        membersTimer = null;
+    }
+
+    document.addEventListener('visibilitychange', () => {
+        if (!document.hidden && membersTimer) loadMembers().catch(() => {});
+    });
+
+    const openMembersModal = async () => {
+        inviteForm.reset();
+        membersModalOverlay.hidden = false;
+        await loadMembers();
+        inviteEmailInput.focus();
+    };
+
+    const closeMembersModal = () => {
+        membersModalOverlay.hidden = true;
+    };
+
+    document.getElementById('membersBtn').addEventListener('click', () => {
+        if (currentProject) openMembersModal();
+    });
+    document.getElementById('closeMembersBtn').addEventListener('click', closeMembersModal);
+    membersModalOverlay.addEventListener('click', (e) => {
+        if (e.target === membersModalOverlay) closeMembersModal();
+    });
+
+    inviteForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const email = inviteEmailInput.value.trim();
+        if (!email || !currentProject) return;
+
+        const res = await fetchWithAuth(`/projects/${currentProject.id}/invite`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email }),
+        });
+        if (!res.ok) return;
+
+        showToast('User added to the project', 'success');
+        inviteForm.reset();
+        await loadMembers();
     });
 
     // --- Board view controls ---
