@@ -232,13 +232,17 @@ const deleteUser = async (req, res) => {
  *                 type: string
  *               email:
  *                 type: string
- *               password:
+ *               oldPassword:
+ *                 type: string
+ *               newPassword:
  *                 type: string
  *     responses:
  *       200:
  *         description: User updated successfully
  *       400:
  *         description: Invalid input
+ *       401:
+ *         description: Current password is incorrect
  *       403:
  *         description: Forbidden
  *       404:
@@ -257,16 +261,25 @@ const updateUser = async (req, res, next) => {
             return res.status(404).send({ error: 'user not found' });
         }
 
-        const { name, email, password } = req.body;
-        
+        const { name, email, oldPassword, newPassword } = req.body;
+
         const updatedUser = {
             name: name || user.name,
             email: email || user.email,
             password: user.password
         };
 
-        if (password) {
-            updatedUser.password = await bcrypt.hash(password, 10);
+        if (newPassword) {
+            if (!oldPassword) {
+                return res.status(400).send({ error: 'current password is required to set a new password' });
+            }
+
+            const valid = await bcrypt.compare(oldPassword, user.password);
+            if (!valid) {
+                return res.status(401).send({ error: 'current password is incorrect' });
+            }
+
+            updatedUser.password = await bcrypt.hash(newPassword, 10);
         }
 
         await db.updateUser(req.params.id, updatedUser);
