@@ -146,9 +146,71 @@ const updateProject = async (req, res) => {
  */
 const deleteProject = async (req, res) => {
     try {
+        const project = await db.getProject(req.params.id);
+        if (!project) {
+            return res.status(404).send({ error: 'Project not found' });
+        }
+        if (req.user && project.creator_id !== req.user.id) {
+            return res.status(403).send({ error: 'Forbidden: only the owner can delete the project' });
+        }
         await db.deleteProject(req.params.id);
         eventBus.emit(eventTypes.PROJECT_DELETED, { id: req.params.id });
         res.sendStatus(200);
+    } catch (err) {
+        res.status(500).send({ error: err.message });
+    }
+};
+
+/**
+ * @openapi
+ * /projects/{id}/leave:
+ *   post:
+ *     summary: Leave a project
+ *     operationId: leaveProject
+ *     tags: [Projects]
+ *     parameters:
+ *       - name: id
+ *         in: path
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Successfully left or deleted the project
+ *       403:
+ *         description: Forbidden (not a member)
+ *       404:
+ *         description: Project not found
+ *       500:
+ *         description: Internal server error
+ */
+const leaveProject = async (req, res) => {
+    try {
+        const userId = req.user ? req.user.id : null;
+        if (!userId) return res.status(401).send({ error: 'Unauthorized' });
+
+        const projectId = req.params.id;
+        const project = await db.getProject(projectId);
+        
+        if (!project) {
+            return res.status(404).send({ error: 'Project not found' });
+        }
+
+        if (project.creator_id === userId) {
+            await db.deleteProject(projectId);
+            eventBus.emit(eventTypes.PROJECT_DELETED, { id: projectId });
+            return res.status(200).send({ message: 'Project deleted' });
+        }
+
+        const users = await db.getProjectUsers(projectId);
+        const isMember = users.some(u => u.id === userId);
+        
+        if (!isMember) {
+            return res.status(403).send({ error: 'Forbidden' });
+        }
+
+        await db.removeUserFromProject(projectId, userId);
+        res.status(200).send({ message: 'Left project' });
     } catch (err) {
         res.status(500).send({ error: err.message });
     }
@@ -304,6 +366,7 @@ router.get('/:id', getProjectById);
 router.put('/:id', updateProject);
 router.delete('/:id', deleteProject);
 
+router.post('/:id/leave', leaveProject);
 router.post('/:id/invite', inviteUser);
 router.get('/:id/users', getProjectUsers);
 router.delete('/:id/users/:userId', removeUser);
@@ -314,6 +377,7 @@ module.exports.getProjects = getProjects;
 module.exports.getProjectById = getProjectById;
 module.exports.updateProject = updateProject;
 module.exports.deleteProject = deleteProject;
+module.exports.leaveProject = leaveProject;
 module.exports.inviteUser = inviteUser;
 module.exports.getProjectUsers = getProjectUsers;
 module.exports.removeUser = removeUser;

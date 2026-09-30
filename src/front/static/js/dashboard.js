@@ -843,6 +843,24 @@
         if (currentProject) removeProject(currentProject);
     });
 
+    document.getElementById('leaveProjectBtn').addEventListener('click', async () => {
+        if (!currentProject) return;
+        
+        const isOwner = currentProject.creator_id === currentUserId();
+        const confirmMessage = isOwner 
+            ? `Delete "${currentProject.name}" for everyone? This cannot be undone.` 
+            : `Leave "${currentProject.name}"?`;
+            
+        if (!confirm(confirmMessage)) return;
+
+        const res = await fetchWithAuth(`/projects/${currentProject.id}/leave`, { method: 'POST' });
+        if (res.ok) {
+            showToast(isOwner ? 'Project deleted' : 'You left the project', 'success');
+            showProjectsView();
+            await loadProjects();
+        }
+    });
+
     // --- Logout ---
 
     document.getElementById('logoutBtn').addEventListener('click', () => {
