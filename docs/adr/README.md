@@ -19,6 +19,7 @@ into its current form.
 | [0010](0010-linting-eslint.md) | Linting: ESLint |
 | [0011](0011-domain-events-eventemitter.md) | Domain events: `EventEmitter`-based event bus |
 | [0012](0012-front-folder-structure.md) | Front-end structure: static assets and EJS views under `front/` |
+| [0013](0013-event-contract-testing.md) | Contract testing: JSON Schema for the internal domain-event bus |
 
 Each ADR follows the same structure: **Status**, **Context**, **Decision**,
 **Consequences**, and **Alternatives Considered**.

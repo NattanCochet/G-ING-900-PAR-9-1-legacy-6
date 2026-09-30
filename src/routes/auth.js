@@ -208,12 +208,101 @@ const deleteUser = async (req, res) => {
     }
 };
 
+/**
+ * @openapi
+ * /users/{id}:
+ *   put:
+ *     summary: Update a user's information (GDPR right to rectification)
+ *     operationId: updateUser
+ *     tags: [Auth]
+ *     parameters:
+ *       - name: id
+ *         in: path
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               name:
+ *                 type: string
+ *               email:
+ *                 type: string
+ *               oldPassword:
+ *                 type: string
+ *               newPassword:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: User updated successfully
+ *       400:
+ *         description: Invalid input
+ *       401:
+ *         description: Current password is incorrect
+ *       403:
+ *         description: Forbidden
+ *       404:
+ *         description: User not found
+ *       500:
+ *         description: Internal server error
+ */
+const updateUser = async (req, res, next) => {
+    try {
+        if (req.user && req.user.id !== req.params.id) {
+            return res.sendStatus(403);
+        }
+
+        const user = await db.getUserById(req.params.id);
+        if (!user) {
+            return res.status(404).send({ error: 'user not found' });
+        }
+
+        const { name, email, oldPassword, newPassword } = req.body;
+
+        const updatedUser = {
+            name: name || user.name,
+            email: email || user.email,
+            password: user.password
+        };
+
+        if (newPassword) {
+            if (!oldPassword) {
+                return res.status(400).send({ error: 'current password is required to set a new password' });
+            }
+
+            const valid = await bcrypt.compare(oldPassword, user.password);
+            if (!valid) {
+                return res.status(401).send({ error: 'current password is incorrect' });
+            }
+
+            updatedUser.password = await bcrypt.hash(newPassword, 10);
+        }
+
+        await db.updateUser(req.params.id, updatedUser);
+        eventBus.emit(eventTypes.USER_UPDATED, { id: req.params.id, name: updatedUser.name, email: updatedUser.email });
+
+        res.status(200).send({ id: req.params.id, name: updatedUser.name, email: updatedUser.email });
+    } catch (err) {
+        if (typeof next === 'function') {
+            next(err);
+        } else {
+            res.status(500).send({ error: 'internal server error' });
+        }
+    }
+};
+
 router.post('/register', signup);
 router.post('/signup', signup);
 router.post('/login', login);
 router.delete('/users/:id', auth, deleteUser);
+router.put('/users/:id', auth, updateUser);
 
 module.exports = router;
 module.exports.signup = signup;
 module.exports.login = login;
 module.exports.deleteUser = deleteUser;
+module.exports.updateUser = updateUser;

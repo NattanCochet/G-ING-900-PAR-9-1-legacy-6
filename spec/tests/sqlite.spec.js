@@ -72,6 +72,25 @@ test('it can remove a user', async () => {
     expect(user).toBeUndefined();
 });
 
+test('it can get a user by id', async () => {
+    await db.init();
+    await db.createUser(USER);
+
+    const user = await db.getUserById(USER.id);
+    expect(user).toEqual(USER);
+});
+
+test('it can update a user', async () => {
+    await db.init();
+    await db.createUser(USER);
+
+    const updatedData = { name: 'Bob', email: 'bob@example.com', password: 'new_password' };
+    await db.updateUser(USER.id, updatedData);
+
+    const user = await db.getUserByEmail(updatedData.email);
+    expect(user).toEqual({ id: USER.id, ...updatedData });
+});
+
 test('it can create, get, update, and delete projects', async () => {
     await db.init();
     await db.createUser(USER);
@@ -190,4 +209,49 @@ test('it cascades delete from column to tasks', async () => {
 test('it closes connection correctly on teardown', async () => {
     await db.init();
     await db.teardown();
+});
+
+test('it can assign a user to a task and retrieve task users', async () => {
+    await db.init();
+    await db.createUser(USER);
+    await db.createProject(PROJECT);
+    await db.createColumn(COLUMN);
+    await db.createTask(TASK);
+
+    await db.assignUserToTask(TASK.id, USER.id);
+
+    const users = await db.getTaskUsers(TASK.id);
+    expect(users.length).toBe(1);
+    expect(users[0].id).toBe(USER.id);
+    expect(users[0].name).toBe(USER.name);
+    expect(users[0].email).toBe(USER.email);
+});
+
+test('it can assign a user to a project and retrieve project users', async () => {
+    await db.init();
+    await db.createUser(USER);
+    await db.createProject(PROJECT);
+
+    await db.assignUserToProject(PROJECT.id, USER.id);
+
+    const users = await db.getProjectUsers(PROJECT.id);
+    expect(users.length).toBe(1);
+    expect(users[0].id).toBe(USER.id);
+    expect(users[0].name).toBe(USER.name);
+    expect(users[0].email).toBe(USER.email);
+});
+
+test('it gets projects where user is creator or invited', async () => {
+    await db.init();
+    await db.createUser(USER);
+    const user2 = { ...USER, id: 'user-2', email: 'user2@example.com' };
+    await db.createUser(user2);
+
+    await db.createProject(PROJECT); // created by USER
+    await db.createProject({ ...PROJECT, id: 'proj-2', creator_id: 'user-2', name: 'Proj 2' }); // created by user-2
+
+    await db.assignUserToProject('proj-2', USER.id);
+
+    const userProjects = await db.getProjects(USER.id);
+    expect(userProjects.length).toBe(2);
 });

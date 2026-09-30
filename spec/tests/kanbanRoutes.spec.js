@@ -5,6 +5,9 @@ const {
     getProjectById,
     updateProject,
     deleteProject,
+    inviteUser: inviteUserToProject,
+    getProjectUsers,
+    removeUser,
 } = require('../../src/routes/projects');
 
 const {
@@ -21,6 +24,8 @@ const {
     getTaskById,
     updateTask,
     deleteTask,
+    inviteUser,
+    getTaskUsers,
 } = require('../../src/routes/tasks');
 
 const { v4: uuid } = require('uuid');
@@ -46,6 +51,13 @@ jest.mock('../../src/database', () => ({
     getTask: jest.fn(),
     updateTask: jest.fn(),
     deleteTask: jest.fn(),
+    
+    getUserByEmail: jest.fn(),
+    assignUserToTask: jest.fn(),
+    getTaskUsers: jest.fn(),
+    assignUserToProject: jest.fn(),
+    getProjectUsers: jest.fn(),
+    removeUserFromProject: jest.fn(),
 }));
 
 beforeEach(() => {
@@ -141,12 +153,60 @@ describe('Project routes', () => {
     });
 
     test('it deletes a project', async () => {
-        const req = { params: { id: 'proj-1' } };
-        const res = { sendStatus: jest.fn() };
+        const req = { params: { id: 'proj-1' }, user: { id: 'user-1' } };
+        const res = { sendStatus: jest.fn(), status: jest.fn().mockReturnThis(), send: jest.fn() };
+        db.getProject.mockResolvedValue({ id: 'proj-1', creator_id: 'user-1' });
 
         await deleteProject(req, res);
+        expect(db.getProject).toHaveBeenCalledWith('proj-1');
         expect(db.deleteProject).toHaveBeenCalledWith('proj-1');
         expect(res.sendStatus).toHaveBeenCalledWith(200);
+    });
+
+    test('it invites a user to a project', async () => {
+        const req = { params: { id: 'proj-1' }, body: { email: 'alice@example.com' } };
+        const res = { status: jest.fn().mockReturnThis(), send: jest.fn() };
+        db.getProject.mockResolvedValue({ id: 'proj-1' });
+        db.getUserByEmail.mockResolvedValue({ id: 'user-1', name: 'Alice', email: 'alice@example.com' });
+
+        await inviteUserToProject(req, res);
+        expect(db.getProject).toHaveBeenCalledWith('proj-1');
+        expect(db.getUserByEmail).toHaveBeenCalledWith('alice@example.com');
+        expect(db.assignUserToProject).toHaveBeenCalledWith('proj-1', 'user-1');
+        expect(res.status).toHaveBeenCalledWith(200);
+        expect(res.send).toHaveBeenCalledWith({ message: 'User invited successfully', user: { id: 'user-1', name: 'Alice', email: 'alice@example.com' } });
+    });
+
+    test('it gets users for a project', async () => {
+        const req = { params: { id: 'proj-1' } };
+        const res = { send: jest.fn() };
+        db.getProjectUsers.mockResolvedValue([{ id: 'user-1', name: 'Alice', email: 'alice@example.com' }]);
+
+        await getProjectUsers(req, res);
+        expect(db.getProjectUsers).toHaveBeenCalledWith('proj-1');
+        expect(res.send).toHaveBeenCalledWith([{ id: 'user-1', name: 'Alice', email: 'alice@example.com' }]);
+    });
+
+    test('it removes a user from a project', async () => {
+        const req = { params: { id: 'proj-1', userId: 'user-1' } };
+        const res = { status: jest.fn().mockReturnThis(), send: jest.fn() };
+        db.getProject.mockResolvedValue({ id: 'proj-1' });
+
+        await removeUser(req, res);
+        expect(db.getProject).toHaveBeenCalledWith('proj-1');
+        expect(db.removeUserFromProject).toHaveBeenCalledWith('proj-1', 'user-1');
+        expect(res.status).toHaveBeenCalledWith(200);
+        expect(res.send).toHaveBeenCalledWith({ message: 'User removed successfully' });
+    });
+
+    test('it returns 404 when removing user from non-existent project', async () => {
+        const req = { params: { id: 'proj-unknown', userId: 'user-1' } };
+        const res = { status: jest.fn().mockReturnThis(), send: jest.fn() };
+        db.getProject.mockResolvedValue(null);
+
+        await removeUser(req, res);
+        expect(res.status).toHaveBeenCalledWith(404);
+        expect(db.removeUserFromProject).not.toHaveBeenCalled();
     });
 });
 
@@ -369,5 +429,29 @@ describe('Task routes', () => {
         await deleteTask(req, res);
         expect(db.deleteTask).toHaveBeenCalledWith('task-1');
         expect(res.sendStatus).toHaveBeenCalledWith(200);
+    });
+
+    test('it invites a user to a task', async () => {
+        const req = { params: { id: 'task-1' }, body: { email: 'alice@example.com' } };
+        const res = { status: jest.fn().mockReturnThis(), send: jest.fn() };
+        db.getTask.mockResolvedValue({ id: 'task-1' });
+        db.getUserByEmail.mockResolvedValue({ id: 'user-1', name: 'Alice', email: 'alice@example.com' });
+
+        await inviteUser(req, res);
+        expect(db.getTask).toHaveBeenCalledWith('task-1');
+        expect(db.getUserByEmail).toHaveBeenCalledWith('alice@example.com');
+        expect(db.assignUserToTask).toHaveBeenCalledWith('task-1', 'user-1');
+        expect(res.status).toHaveBeenCalledWith(200);
+        expect(res.send).toHaveBeenCalledWith({ message: 'User invited successfully', user: { id: 'user-1', name: 'Alice', email: 'alice@example.com' } });
+    });
+
+    test('it gets users for a task', async () => {
+        const req = { params: { id: 'task-1' } };
+        const res = { send: jest.fn() };
+        db.getTaskUsers.mockResolvedValue([{ id: 'user-1', name: 'Alice', email: 'alice@example.com' }]);
+
+        await getTaskUsers(req, res);
+        expect(db.getTaskUsers).toHaveBeenCalledWith('task-1');
+        expect(res.send).toHaveBeenCalledWith([{ id: 'user-1', name: 'Alice', email: 'alice@example.com' }]);
     });
 });

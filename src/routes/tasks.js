@@ -249,11 +249,96 @@ const deleteTask = async (req, res) => {
     }
 };
 
+/**
+ * @openapi
+ * /tasks/{id}/invite:
+ *   post:
+ *     summary: Invite a user to a task by email
+ *     operationId: inviteUserToTask
+ *     tags: [Tasks]
+ *     parameters:
+ *       - name: id
+ *         in: path
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               email:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: User invited successfully
+ *       404:
+ *         description: Task or User not found
+ *       500:
+ *         description: Internal server error
+ */
+const inviteUser = async (req, res) => {
+    try {
+        const { email } = req.body;
+        if (!email) {
+            return res.status(400).send({ error: 'email is required' });
+        }
+
+        const task = await db.getTask(req.params.id);
+        if (!task) {
+            return res.status(404).send({ error: 'Task not found' });
+        }
+
+        const user = await db.getUserByEmail(email);
+        if (!user) {
+            return res.status(404).send({ error: 'User not found' });
+        }
+
+        await db.assignUserToTask(task.id, user.id);
+        res.status(200).send({ message: 'User invited successfully', user: { id: user.id, name: user.name, email: user.email } });
+    } catch (err) {
+        res.status(500).send({ error: err.message });
+    }
+};
+
+/**
+ * @openapi
+ * /tasks/{id}/users:
+ *   get:
+ *     summary: Get users assigned to a task
+ *     operationId: getTaskUsers
+ *     tags: [Tasks]
+ *     parameters:
+ *       - name: id
+ *         in: path
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Successful response
+ *       500:
+ *         description: Internal server error
+ */
+const getTaskUsers = async (req, res) => {
+    try {
+        const users = await db.getTaskUsers(req.params.id);
+        res.send(users);
+    } catch (err) {
+        res.status(500).send({ error: err.message });
+    }
+};
+
 router.get('/', getTasks);
 router.post('/', addTask);
 router.get('/:id', getTaskById);
 router.put('/:id', updateTask);
 router.delete('/:id', deleteTask);
+
+router.post('/:id/invite', inviteUser);
+router.get('/:id/users', getTaskUsers);
 
 module.exports = router;
 module.exports.addTask = addTask;
@@ -261,3 +346,5 @@ module.exports.getTasks = getTasks;
 module.exports.getTaskById = getTaskById;
 module.exports.updateTask = updateTask;
 module.exports.deleteTask = deleteTask;
+module.exports.inviteUser = inviteUser;
+module.exports.getTaskUsers = getTaskUsers;
