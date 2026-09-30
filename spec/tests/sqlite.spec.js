@@ -72,6 +72,25 @@ test('it can remove a user', async () => {
     expect(user).toBeUndefined();
 });
 
+test('it can get a user by id', async () => {
+    await db.init();
+    await db.createUser(USER);
+
+    const user = await db.getUserById(USER.id);
+    expect(user).toEqual(USER);
+});
+
+test('it can update a user', async () => {
+    await db.init();
+    await db.createUser(USER);
+
+    const updatedData = { name: 'Bob', email: 'bob@example.com', password: 'new_password' };
+    await db.updateUser(USER.id, updatedData);
+
+    const user = await db.getUserByEmail(updatedData.email);
+    expect(user).toEqual({ id: USER.id, ...updatedData });
+});
+
 test('it can create, get, update, and delete projects', async () => {
     await db.init();
     await db.createUser(USER);
