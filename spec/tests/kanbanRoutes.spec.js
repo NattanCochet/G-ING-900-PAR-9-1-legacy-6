@@ -7,6 +7,7 @@ const {
     deleteProject,
     inviteUser: inviteUserToProject,
     getProjectUsers,
+    getProjectOwner,
 } = require('../../src/routes/projects');
 
 const {
@@ -56,6 +57,7 @@ jest.mock('../../src/database', () => ({
     getTaskUsers: jest.fn(),
     assignUserToProject: jest.fn(),
     getProjectUsers: jest.fn(),
+    getUserById: jest.fn(),
 }));
 
 beforeEach(() => {
@@ -181,6 +183,26 @@ describe('Project routes', () => {
         await getProjectUsers(req, res);
         expect(db.getProjectUsers).toHaveBeenCalledWith('proj-1');
         expect(res.send).toHaveBeenCalledWith([{ id: 'user-1', name: 'Alice', email: 'alice@example.com' }]);
+    });
+
+    test('it gets the owner of a project', async () => {
+        const req = { params: { id: 'proj-1' } };
+        const res = { send: jest.fn() };
+        db.getProject.mockResolvedValue({ id: 'proj-1', creator_id: 'user-1' });
+        db.getUserById.mockResolvedValue({ id: 'user-1', name: 'Alice', email: 'alice@example.com' });
+
+        await getProjectOwner(req, res);
+        expect(db.getUserById).toHaveBeenCalledWith('user-1');
+        expect(res.send).toHaveBeenCalledWith({ id: 'user-1', name: 'Alice', email: 'alice@example.com' });
+    });
+
+    test('it returns 404 for the owner of an unknown project', async () => {
+        const req = { params: { id: 'nope' } };
+        const res = { status: jest.fn().mockReturnThis(), send: jest.fn() };
+        db.getProject.mockResolvedValue(undefined);
+
+        await getProjectOwner(req, res);
+        expect(res.status).toHaveBeenCalledWith(404);
     });
 });
 

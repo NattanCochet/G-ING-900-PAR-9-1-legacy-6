@@ -8,7 +8,8 @@
     "dev": "nodemon -L src/index.js",
     "lint": "eslint .",
     "test": "jest",
-    "prepare": "husky || true"
+    "prepare": "husky || true",
+    "build:front": "esbuild src/front/react/members.jsx --bundle --minify --format=iife --define:process.env.NODE_ENV=\\\"production\\\" --outfile=src/front/static/dist/members.js && tailwindcss -i src/front/react/heroui.css -o src/front/static/dist/heroui.css --minify"
   },
   "jest": {
     "reporters": [
@@ -25,15 +26,20 @@
     ]
   },
   "dependencies": {
+    "@heroui/react": "^3.2.6",
+    "@internationalized/date": "^3.12.4",
     "@scalar/express-api-reference": "^0.10.17",
     "bcryptjs": "^3.0.3",
     "dotenv": "^17.4.2",
     "ejs": "^6.0.1",
     "express": "^5.2.1",
+    "framer-motion": "^13.4.6",
     "jest": "^30.5.1",
     "jsonwebtoken": "^9.0.3",
     "mysql2": "^3.16.1",
     "nodemailer": "^10.0.10",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
     "sqlite3": "^6.0.1",
     "swagger-jsdoc": "^6.3.0",
     "uuid": "^13.0.0",
@@ -41,6 +47,8 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",
+    "@tailwindcss/cli": "^4.3.3",
+    "esbuild": "^0.28.2",
     "eslint": "^9.39.1",
     "globals": "^16.5.0",
     "husky": "^9.1.7",

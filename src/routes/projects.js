@@ -236,6 +236,43 @@ const getProjectUsers = async (req, res) => {
     }
 };
 
+/**
+ * @openapi
+ * /projects/{id}/owner:
+ *   get:
+ *     summary: Get the owner (creator) of a project
+ *     operationId: getProjectOwner
+ *     tags: [Projects]
+ *     parameters:
+ *       - name: id
+ *         in: path
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Successful response
+ *       404:
+ *         description: Project or owner not found
+ *       500:
+ *         description: Internal server error
+ */
+const getProjectOwner = async (req, res) => {
+    try {
+        const project = await db.getProject(req.params.id);
+        if (!project) {
+            return res.status(404).send({ error: 'Project not found' });
+        }
+        const owner = await db.getUserById(project.creator_id);
+        if (!owner) {
+            return res.status(404).send({ error: 'Owner not found' });
+        }
+        res.send(owner);
+    } catch (err) {
+        res.status(500).send({ error: err.message });
+    }
+};
+
 router.use('/:projectId/columns', columnRouter);
 router.use('/:projectId/tasks', taskRouter);
 
@@ -247,6 +284,7 @@ router.delete('/:id', deleteProject);
 
 router.post('/:id/invite', inviteUser);
 router.get('/:id/users', getProjectUsers);
+router.get('/:id/owner', getProjectOwner);
 
 module.exports = router;
 module.exports.addProject = addProject;
@@ -256,3 +294,4 @@ module.exports.updateProject = updateProject;
 module.exports.deleteProject = deleteProject;
 module.exports.inviteUser = inviteUser;
 module.exports.getProjectUsers = getProjectUsers;
+module.exports.getProjectOwner = getProjectOwner;

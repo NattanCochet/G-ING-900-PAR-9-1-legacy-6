@@ -61,11 +61,11 @@
                     localStorage.setItem('user', JSON.stringify(data.user));
                     window.location.href = '/home';
                 } else {
-                    errorMsg.textContent = data.error || 'Erreur lors de l\'inscription';
+                    errorMsg.textContent = data.error || 'Sign up failed';
                     errorMsg.style.display = 'block';
                 }
             } catch (err) {
-                errorMsg.textContent = 'Erreur réseau';
+                errorMsg.textContent = 'Network error';
                 errorMsg.style.display = 'block';
             }
         });

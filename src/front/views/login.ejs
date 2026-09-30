@@ -54,11 +54,11 @@
                     localStorage.setItem('user', JSON.stringify(data.user));
                     window.location.href = '/home';
                 } else {
-                    errorMsg.textContent = data.error || 'Erreur de connexion';
+                    errorMsg.textContent = data.error || 'Login failed';
                     errorMsg.style.display = 'block';
                 }
             } catch (err) {
-                errorMsg.textContent = 'Erreur réseau';
+                errorMsg.textContent = 'Network error';
                 errorMsg.style.display = 'block';
             }
         });
