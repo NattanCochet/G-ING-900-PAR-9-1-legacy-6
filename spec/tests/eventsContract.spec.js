@@ -102,9 +102,10 @@ describe('Producer contracts (routes -> eventBus)', () => {
     });
 
     test('deleteProject emits a PROJECT_DELETED payload matching the contract', async () => {
+        db.getProject.mockResolvedValueOnce({ id: 'proj-1', creator_id: 'user-1' });
         const captured = nextEmittedPayload(eventTypes.PROJECT_DELETED);
 
-        await deleteProject({ params: { id: 'proj-1' } }, res());
+        await deleteProject({ params: { id: 'proj-1' }, user: { id: 'user-1' } }, res());
 
         expect(validateEventPayload(eventTypes.PROJECT_DELETED, await captured)).toEqual({ valid: true, errors: null });
     });

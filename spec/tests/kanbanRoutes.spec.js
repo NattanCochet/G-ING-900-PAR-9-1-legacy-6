@@ -153,10 +153,12 @@ describe('Project routes', () => {
     });
 
     test('it deletes a project', async () => {
-        const req = { params: { id: 'proj-1' } };
-        const res = { sendStatus: jest.fn() };
+        const req = { params: { id: 'proj-1' }, user: { id: 'user-1' } };
+        const res = { sendStatus: jest.fn(), status: jest.fn().mockReturnThis(), send: jest.fn() };
+        db.getProject.mockResolvedValue({ id: 'proj-1', creator_id: 'user-1' });
 
         await deleteProject(req, res);
+        expect(db.getProject).toHaveBeenCalledWith('proj-1');
         expect(db.deleteProject).toHaveBeenCalledWith('proj-1');
         expect(res.sendStatus).toHaveBeenCalledWith(200);
     });
