@@ -22,6 +22,10 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      # prebuild-install may fetch a sqlite3 binary linked against a newer GLIBC than the runner has
+      - name: Rebuild sqlite3 for this runner's GLIBC
+        run: npm rebuild sqlite3 --build-from-source
+
       - name: Run tests
         run: npm test
         env:
