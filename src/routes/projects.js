@@ -236,6 +236,48 @@ const getProjectUsers = async (req, res) => {
     }
 };
 
+/**
+ * @openapi
+ * /projects/{id}/users/{userId}:
+ *   delete:
+ *     summary: Remove a user from a project
+ *     operationId: removeUserFromProject
+ *     tags: [Projects]
+ *     parameters:
+ *       - name: id
+ *         in: path
+ *         required: true
+ *         schema:
+ *           type: string
+ *       - name: userId
+ *         in: path
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: User removed successfully
+ *       404:
+ *         description: Project not found
+ *       500:
+ *         description: Internal server error
+ */
+const removeUser = async (req, res) => {
+    try {
+        const { id, userId } = req.params;
+
+        const project = await db.getProject(id);
+        if (!project) {
+            return res.status(404).send({ error: 'Project not found' });
+        }
+
+        await db.removeUserFromProject(id, userId);
+        res.status(200).send({ message: 'User removed successfully' });
+    } catch (err) {
+        res.status(500).send({ error: err.message });
+    }
+};
+
 router.use('/:projectId/columns', columnRouter);
 router.use('/:projectId/tasks', taskRouter);
 
@@ -247,6 +289,7 @@ router.delete('/:id', deleteProject);
 
 router.post('/:id/invite', inviteUser);
 router.get('/:id/users', getProjectUsers);
+router.delete('/:id/users/:userId', removeUser);
 
 module.exports = router;
 module.exports.addProject = addProject;
@@ -256,3 +299,4 @@ module.exports.updateProject = updateProject;
 module.exports.deleteProject = deleteProject;
 module.exports.inviteUser = inviteUser;
 module.exports.getProjectUsers = getProjectUsers;
+module.exports.removeUser = removeUser;

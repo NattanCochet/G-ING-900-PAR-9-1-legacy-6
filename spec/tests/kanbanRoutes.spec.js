@@ -7,6 +7,7 @@ const {
     deleteProject,
     inviteUser: inviteUserToProject,
     getProjectUsers,
+    removeUser,
 } = require('../../src/routes/projects');
 
 const {
@@ -56,6 +57,7 @@ jest.mock('../../src/database', () => ({
     getTaskUsers: jest.fn(),
     assignUserToProject: jest.fn(),
     getProjectUsers: jest.fn(),
+    removeUserFromProject: jest.fn(),
 }));
 
 beforeEach(() => {
@@ -181,6 +183,28 @@ describe('Project routes', () => {
         await getProjectUsers(req, res);
         expect(db.getProjectUsers).toHaveBeenCalledWith('proj-1');
         expect(res.send).toHaveBeenCalledWith([{ id: 'user-1', name: 'Alice', email: 'alice@example.com' }]);
+    });
+
+    test('it removes a user from a project', async () => {
+        const req = { params: { id: 'proj-1', userId: 'user-1' } };
+        const res = { status: jest.fn().mockReturnThis(), send: jest.fn() };
+        db.getProject.mockResolvedValue({ id: 'proj-1' });
+
+        await removeUser(req, res);
+        expect(db.getProject).toHaveBeenCalledWith('proj-1');
+        expect(db.removeUserFromProject).toHaveBeenCalledWith('proj-1', 'user-1');
+        expect(res.status).toHaveBeenCalledWith(200);
+        expect(res.send).toHaveBeenCalledWith({ message: 'User removed successfully' });
+    });
+
+    test('it returns 404 when removing user from non-existent project', async () => {
+        const req = { params: { id: 'proj-unknown', userId: 'user-1' } };
+        const res = { status: jest.fn().mockReturnThis(), send: jest.fn() };
+        db.getProject.mockResolvedValue(null);
+
+        await removeUser(req, res);
+        expect(res.status).toHaveBeenCalledWith(404);
+        expect(db.removeUserFromProject).not.toHaveBeenCalled();
     });
 });
 
