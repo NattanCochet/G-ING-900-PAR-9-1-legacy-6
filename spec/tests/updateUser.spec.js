@@ -1,7 +1,7 @@
 const db = require('../../src/database');
 const { updateUser } = require('../../src/routes/auth');
 const bcrypt = require('bcryptjs');
-const { eventBus, eventTypes } = require('../../src/events');
+const { eventBus } = require('../../src/events');
 
 jest.mock('../../src/database', () => ({
     updateUser: jest.fn(),
