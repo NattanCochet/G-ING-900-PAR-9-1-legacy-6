@@ -114,6 +114,10 @@
   animation: fadeIn 0.5s ease 0.32s both;
 }
 
+.auth-error {
+  color: var(--red);
+}
+
 .auth-footer a {
   color: var(--blue);
   text-decoration: none;
