@@ -28,7 +28,13 @@ function init() {
                     if (err) return rej(err);
                     db.run(queries.alterTasksAddDeadlineSqlite, () => {});
                     db.run(queries.alterTasksAddPrioritySqlite, () => {});
-                    acc();
+                    db.run(queries.initTaskUsersSqlite, err => {
+                        if (err) return rej(err);
+                        db.run(queries.initProjectUsersSqlite, err => {
+                            if (err) return rej(err);
+                            acc();
+                        });
+                    });
                 });
             });
         });
@@ -76,6 +82,19 @@ async function getUserById(id) {
     });
 }
 
+async function updateUser(id, user) {
+    return new Promise((acc, rej) => {
+        db.run(
+            queries.updateUser,
+            [user.name, user.email, user.password, id],
+            err => {
+                if (err) return rej(err);
+                acc();
+            },
+        );
+    });
+}
+
 async function deleteUser(id) {
     return new Promise((acc, rej) => {
         db.run(queries.deleteUser, [id], err => {
@@ -101,7 +120,7 @@ async function createProject(project) {
 async function getProjects(creator_id) {
     return new Promise((acc, rej) => {
         const sql = creator_id ? queries.getProjectsByCreator : queries.getAllProjects;
-        const params = creator_id ? [creator_id] : [];
+        const params = creator_id ? [creator_id, creator_id] : [];
         db.all(sql, params, (err, rows) => {
             if (err) return rej(err);
             acc(rows || []);
@@ -284,6 +303,51 @@ async function deleteTask(id) {
     });
 }
 
+async function assignUserToTask(taskId, userId) {
+    return new Promise((acc, rej) => {
+        db.run(queries.assignUserToTaskSqlite, [taskId, userId], err => {
+            if (err) return rej(err);
+            acc();
+        });
+    });
+}
+
+async function getTaskUsers(taskId) {
+    return new Promise((acc, rej) => {
+        db.all(queries.getTaskUsers, [taskId], (err, rows) => {
+            if (err) return rej(err);
+            acc(rows || []);
+        });
+    });
+}
+
+async function assignUserToProject(projectId, userId) {
+    return new Promise((acc, rej) => {
+        db.run(queries.assignUserToProjectSqlite, [projectId, userId], err => {
+            if (err) return rej(err);
+            acc();
+        });
+    });
+}
+
+async function getProjectUsers(projectId) {
+    return new Promise((acc, rej) => {
+        db.all(queries.getProjectUsers, [projectId], (err, rows) => {
+            if (err) return rej(err);
+            acc(rows || []);
+        });
+    });
+}
+
+async function removeUserFromProject(projectId, userId) {
+    return new Promise((acc, rej) => {
+        db.run(queries.removeUserFromProject, [projectId, userId], err => {
+            if (err) return rej(err);
+            acc();
+        });
+    });
+}
+
 module.exports = {
     location,
     init,
@@ -291,6 +355,7 @@ module.exports = {
     createUser,
     getUserByEmail,
     getUserById,
+    updateUser,
     deleteUser,
     createProject,
     getProjects,
@@ -308,4 +373,9 @@ module.exports = {
     getTask,
     updateTask,
     deleteTask,
+    assignUserToTask,
+    getTaskUsers,
+    assignUserToProject,
+    getProjectUsers,
+    removeUserFromProject,
 };

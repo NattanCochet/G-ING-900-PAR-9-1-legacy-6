@@ -4,14 +4,15 @@ module.exports = {
     initUsersMysql: 'CREATE TABLE IF NOT EXISTS users (id varchar(36) PRIMARY KEY, name varchar(255), email varchar(255) UNIQUE, password varchar(255)) DEFAULT CHARSET utf8mb4',
     createUser: 'INSERT INTO users (id, name, email, password) VALUES (?, ?, ?, ?)',
     getUserByEmail: 'SELECT * FROM users WHERE email=?',
-    getUserById: 'SELECT id, name, email FROM users WHERE id=?',
+    getUserById: 'SELECT * FROM users WHERE id=?',
+    updateUser: 'UPDATE users SET name=?, email=?, password=? WHERE id=?',
     deleteUser: 'DELETE FROM users WHERE id=?',
 
     // Projects (Projet: id, creator_id, name, description)
     initProjectsSqlite: 'CREATE TABLE IF NOT EXISTS projects (id varchar(36) PRIMARY KEY, creator_id varchar(36) NOT NULL, name varchar(255) NOT NULL, description text, FOREIGN KEY (creator_id) REFERENCES users(id) ON DELETE CASCADE)',
     initProjectsMysql: 'CREATE TABLE IF NOT EXISTS projects (id varchar(36) PRIMARY KEY, creator_id varchar(36) NOT NULL, name varchar(255) NOT NULL, description text, FOREIGN KEY (creator_id) REFERENCES users(id) ON DELETE CASCADE) DEFAULT CHARSET utf8mb4',
     createProject: 'INSERT INTO projects (id, creator_id, name, description) VALUES (?, ?, ?, ?)',
-    getProjectsByCreator: 'SELECT * FROM projects WHERE creator_id=?',
+    getProjectsByCreator: 'SELECT DISTINCT p.* FROM projects p LEFT JOIN project_users pu ON p.id = pu.project_id WHERE p.creator_id=? OR pu.user_id=?',
     getAllProjects: 'SELECT * FROM projects',
     getProjectById: 'SELECT * FROM projects WHERE id=?',
     updateProject: 'UPDATE projects SET name=?, description=? WHERE id=?',
@@ -40,4 +41,20 @@ module.exports = {
     getTaskById: 'SELECT * FROM tasks WHERE id=?',
     updateTask: 'UPDATE tasks SET name=?, description=?, completed=?, column_id=?, deadline=?, priority=? WHERE id=?',
     deleteTask: 'DELETE FROM tasks WHERE id=?',
+
+    // Task Users
+    initTaskUsersSqlite: 'CREATE TABLE IF NOT EXISTS task_users (task_id varchar(36), user_id varchar(36), PRIMARY KEY (task_id, user_id), FOREIGN KEY (task_id) REFERENCES tasks(id) ON DELETE CASCADE, FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE)',
+    initTaskUsersMysql: 'CREATE TABLE IF NOT EXISTS task_users (task_id varchar(36), user_id varchar(36), PRIMARY KEY (task_id, user_id), FOREIGN KEY (task_id) REFERENCES tasks(id) ON DELETE CASCADE, FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE) DEFAULT CHARSET utf8mb4',
+    assignUserToTaskSqlite: 'INSERT OR IGNORE INTO task_users (task_id, user_id) VALUES (?, ?)',
+    assignUserToTaskMysql: 'INSERT IGNORE INTO task_users (task_id, user_id) VALUES (?, ?)',
+    getTaskUsers: 'SELECT u.id, u.name, u.email FROM users u JOIN task_users tu ON u.id = tu.user_id WHERE tu.task_id = ?',
+    removeUserFromTask: 'DELETE FROM task_users WHERE task_id = ? AND user_id = ?',
+
+    // Project Users
+    initProjectUsersSqlite: 'CREATE TABLE IF NOT EXISTS project_users (project_id varchar(36), user_id varchar(36), PRIMARY KEY (project_id, user_id), FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE, FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE)',
+    initProjectUsersMysql: 'CREATE TABLE IF NOT EXISTS project_users (project_id varchar(36), user_id varchar(36), PRIMARY KEY (project_id, user_id), FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE, FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE) DEFAULT CHARSET utf8mb4',
+    assignUserToProjectSqlite: 'INSERT OR IGNORE INTO project_users (project_id, user_id) VALUES (?, ?)',
+    assignUserToProjectMysql: 'INSERT IGNORE INTO project_users (project_id, user_id) VALUES (?, ?)',
+    getProjectUsers: 'SELECT u.id, u.name, u.email FROM users u JOIN project_users pu ON u.id = pu.user_id WHERE pu.project_id = ?',
+    removeUserFromProject: 'DELETE FROM project_users WHERE project_id = ? AND user_id = ?',
 };
